@@ -68,3 +68,29 @@ export function statusGlyph(status: ItemStatus): { canvas: CanvasElement[] } {
       };
   }
 }
+
+const CHECKBOX_SIZE = 8.5;
+
+/**
+ * Gezeichnetes Ankreuzfeld für §3 der Niederschrift (ohne Eckenradius, damit es wie ein
+ * echtes Formularfeld wirkt, nicht wie ein Status-Icon). Gleicher Grund wie bei statusGlyph:
+ * Arimo hat keine Ballot-Box-Glyphen.
+ */
+export function checkboxGlyph(checked: boolean): { canvas: CanvasElement[] } {
+  const canvas: CanvasElement[] = [
+    { type: "rect", x: 0, y: 0, w: CHECKBOX_SIZE, h: CHECKBOX_SIZE, lineColor: pdfColors.grey, lineWidth: 0.75 },
+  ];
+  if (checked) {
+    canvas.push({
+      type: "polyline",
+      lineColor: pdfColors.coral,
+      lineWidth: 1.3,
+      points: [
+        { x: 1.6, y: 4.6 },
+        { x: 3.4, y: 6.8 },
+        { x: 7, y: 1.8 },
+      ],
+    });
+  }
+  return { canvas };
+}

@@ -1,13 +1,23 @@
-import type { AgendaDocument, ChecklistItem, Top } from "../types/agenda";
+import type { AgendaDocument, ChecklistItem, Top, Verjaehrungsfrist } from "../types/agenda";
 import {
   ANCHOR_LINE,
   CURRENT_FORMAT_VERSION,
+  ERGEBNIS_LABEL,
+  FESTSTELLUNG_HEADER_ROW,
+  FESTSTELLUNG_SEP_ROW,
   FORMAT_ID,
   HEADER_FIELD_ORDER,
   STATUS_LABEL,
   STATUS_TO_CHECKBOX,
   TEILNEHMER_HEADER_ROW,
   TEILNEHMER_SEP_ROW,
+  TERMINTREUE_LABEL,
+  UNTERSCHRIFT_HEADER_ROW,
+  UNTERSCHRIFT_SEP_ROW,
+  VERJAEHRUNG_HEADER_ROW,
+  VERJAEHRUNG_SEP_ROW,
+  WARTUNGSVERTRAG_NR_LABEL,
+  escapeCell,
 } from "./dialect";
 
 export interface SerializeOptions {
@@ -32,6 +42,14 @@ export function serializeAgenda(doc: AgendaDocument, options: SerializeOptions =
   if (doc.schlussHinweis.trim() !== "") {
     blocks.push(["## Schlusshinweis", "", ...doc.schlussHinweis.split("\n")]);
   }
+  blocks.push(serializeAbnahmeergebnis(doc));
+  blocks.push(serializeVerjaehrung(doc));
+  blocks.push(serializeVerjaehrungWartung(doc));
+  if (doc.niederschrift.sonstiges.trim() !== "") {
+    blocks.push(["## Sonstiges", "", ...doc.niederschrift.sonstiges.split("\n")]);
+  }
+  blocks.push(serializeUnterschriften(doc));
+  blocks.push(serializeFeststellungen(doc));
 
   return blocks.map((b) => b.join("\n")).join("\n\n") + "\n";
 }
@@ -114,6 +132,63 @@ function serializeItem(item: ChecklistItem, level: number): string[] {
 
   for (const child of item.children) {
     lines.push(...serializeItem(child, level + 1));
+  }
+  return lines;
+}
+
+function serializeAbnahmeergebnis(doc: AgendaDocument): string[] {
+  const n = doc.niederschrift;
+  const lines = [
+    "## Abnahmeergebnis",
+    "",
+    `- **Ergebnis:** ${n.ergebnis ? ERGEBNIS_LABEL[n.ergebnis] : ""}`,
+    `- **Frist zur Mängelbeseitigung:** ${n.maengelbeseitigungFrist ?? ""}`,
+    `- **Frist angemessen:** ${n.fristAngemessen ? "ja" : "nein"}`,
+    `- **Fertigstellung:** ${n.termintreue ? TERMINTREUE_LABEL[n.termintreue] : ""}`,
+  ];
+  for (const [label, value] of Object.entries(n.weitere)) {
+    lines.push(`- **${label}:** ${value}`);
+  }
+  return lines;
+}
+
+function serializeVerjaehrungRows(list: Verjaehrungsfrist[]): string[] {
+  const lines = [VERJAEHRUNG_HEADER_ROW, VERJAEHRUNG_SEP_ROW];
+  for (const v of list) {
+    lines.push(`| ${escapeCell(v.nr)} | ${escapeCell(v.anlagenteil)} | ${escapeCell(v.beginn)} | ${escapeCell(v.ende)} |`);
+  }
+  return lines;
+}
+
+function serializeVerjaehrung(doc: AgendaDocument): string[] {
+  return ["## Verjährungsfristen", "", ...serializeVerjaehrungRows(doc.niederschrift.verjaehrung)];
+}
+
+function serializeVerjaehrungWartung(doc: AgendaDocument): string[] {
+  const n = doc.niederschrift;
+  return [
+    "## Verjährungsfristen bei Wartungsvertrag",
+    "",
+    `- **${WARTUNGSVERTRAG_NR_LABEL}:** ${n.wartungsvertragNr}`,
+    "",
+    ...serializeVerjaehrungRows(n.verjaehrungWartung),
+  ];
+}
+
+function serializeUnterschriften(doc: AgendaDocument): string[] {
+  const lines = ["## Unterschriften", "", UNTERSCHRIFT_HEADER_ROW, UNTERSCHRIFT_SEP_ROW];
+  for (const u of doc.niederschrift.unterschriften) {
+    lines.push(`| ${escapeCell(u.name)} | ${escapeCell(u.funktion)} |`);
+  }
+  return lines;
+}
+
+function serializeFeststellungen(doc: AgendaDocument): string[] {
+  const lines = ["## Feststellungen und Festlegungen", "", FESTSTELLUNG_HEADER_ROW, FESTSTELLUNG_SEP_ROW];
+  for (const f of doc.feststellungen) {
+    lines.push(
+      `| ${escapeCell(f.bezeichnung)} | ${escapeCell(f.beschreibung)} | ${escapeCell(f.zustaendig)} | ${f.frist ?? ""} |`,
+    );
   }
   return lines;
 }

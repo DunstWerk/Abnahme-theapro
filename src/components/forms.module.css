@@ -131,3 +131,28 @@
 .textarea:focus {
   outline: 2px solid var(--c-ice);
 }
+
+.radioGroup {
+  margin-bottom: var(--space-3);
+}
+
+.radioRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: #888;
+  margin: -2px 0 var(--space-3) 24px;
+}
+
+.staticNote {
+  font-size: 0.82rem;
+  color: #888;
+  font-style: italic;
+  margin-top: var(--space-2);
+}

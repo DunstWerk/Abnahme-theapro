@@ -1,46 +1,31 @@
-import type { Content, CustomTableLayout } from "pdfmake";
+import type { Content } from "pdfmake";
 import type { TDocumentDefinitions } from "pdfmake/interfaces";
 import type { AgendaDocument, ChecklistItem, SubSection, Top } from "../types/agenda";
 import { HEADER_LABELS } from "../types/agenda";
 import { STATUS_LABEL } from "../markdown/dialect";
-import { formatDateDe } from "../markdown/normalize";
 import { statusGlyph } from "./statusGlyph";
 import { buildMaengelSection } from "./maengelTable";
 import { defaultStyle, pdfColors, styles } from "./pdfStyles";
+import { borderlessLayout, itemsTableLayout, borderedTableLayout } from "./pdfLayouts";
+import { buildWordmark, buildLegalFooter } from "./letterhead";
+import { buildNiederschrift } from "./niederschrift";
+import { buildAnlage1, buildAnlage2, buildAnlageTitle } from "./anlagen";
 import { pdf as pdfTokens } from "../theme/tokens";
 
-const borderlessLayout: CustomTableLayout = {
-  hLineWidth: () => 0,
-  vLineWidth: () => 0,
-  paddingLeft: () => 0,
-  paddingRight: (i, node) => (i === (node.table.widths?.length ?? 1) - 1 ? 0 : 10),
-  paddingTop: () => 2,
-  paddingBottom: () => 2,
-};
-
-const itemsTableLayout: CustomTableLayout = {
-  hLineWidth: (i, node) => (i === 0 || i === node.table.body.length ? 0 : 0.5),
-  vLineWidth: () => 0,
-  hLineColor: () => pdfColors.grey,
-  paddingLeft: () => 2,
-  paddingRight: () => 2,
-  paddingTop: () => 3,
-  paddingBottom: () => 3,
-};
-
-const teilnehmerTableLayout: CustomTableLayout = {
-  hLineWidth: () => 0.5,
-  vLineWidth: () => 0.5,
-  hLineColor: () => pdfColors.grey,
-  vLineColor: () => pdfColors.grey,
-  paddingLeft: () => 5,
-  paddingRight: () => 5,
-  paddingTop: () => 3,
-  paddingBottom: () => 3,
-};
+/** Anlage 3 zeigt bewusst nur die ursprünglichen 7 Rahmendaten-Felder (Meeting-Logistik) –
+ * die neuen §1-Felder (Gewerk, Auftragsnummer, ...) stehen bereits in der Niederschrift selbst. */
+const ANLAGE3_HEADER_FIELDS: (keyof typeof HEADER_LABELS)[] = [
+  "projekt",
+  "auftraggeber",
+  "auftragnehmer",
+  "fachplanung",
+  "datum",
+  "uhrzeit",
+  "ort",
+];
 
 function buildRahmendaten(doc: AgendaDocument): Content {
-  const rows: Content[][] = (Object.keys(HEADER_LABELS) as (keyof typeof HEADER_LABELS)[]).map((field) => [
+  const rows: Content[][] = ANLAGE3_HEADER_FIELDS.map((field) => [
     { text: HEADER_LABELS[field], bold: true, margin: [0, 0, 0, 0] as [number, number, number, number] },
     { text: doc.header[field] || "–" },
   ]);
@@ -71,7 +56,7 @@ function buildTeilnehmer(doc: AgendaDocument): Content[] {
           ...doc.teilnehmer.map((t) => [t.name || "–", t.firmaFunktion || "–", t.rolle || "–"]),
         ],
       },
-      layout: teilnehmerTableLayout,
+      layout: borderedTableLayout,
       margin: [0, 0, 0, 14],
     },
   ];
@@ -124,7 +109,9 @@ function buildTop(top: Top, doc: AgendaDocument): Content[] {
         margin: [0, 12, 0, 4],
       },
       { text: heading, style: "topHeading" },
-      ...(top.preamble.length ? [{ text: top.preamble.join(" "), style: "itemComment" as const, margin: [0, 2, 0, 0] as [number, number, number, number] }] : []),
+      ...(top.preamble.length
+        ? [{ text: top.preamble.join(" "), style: "itemComment" as const, margin: [0, 2, 0, 0] as [number, number, number, number] }]
+        : []),
     ],
   };
 
@@ -159,8 +146,10 @@ function buildSignatureBlock(doc: AgendaDocument): Content {
   };
 }
 
-export function buildDocDefinition(doc: AgendaDocument): TDocumentDefinitions {
-  const content: Content[] = [
+/** Anlage 3 = das ursprüngliche Checklisten-Protokoll (TOP für TOP), unverändert bis auf den Anlage-Titel. */
+function buildAnlage3(doc: AgendaDocument): Content[] {
+  return [
+    ...buildAnlageTitle(3, "Protokoll der Abnahmebegehung (Checkliste)"),
     { text: doc.titel, style: "docTitle" },
     {
       canvas: [{ type: "line", x1: 0, y1: 0, x2: 495, y2: 0, lineWidth: 2, lineColor: pdfColors.coral }],
@@ -168,41 +157,50 @@ export function buildDocDefinition(doc: AgendaDocument): TDocumentDefinitions {
     },
     buildRahmendaten(doc),
     ...buildTeilnehmer(doc),
-    ...(doc.hinweis.trim() !== "" ? [{ text: doc.hinweis, style: "itemComment" as const, margin: [0, 0, 0, 14] as [number, number, number, number] }] : []),
+    ...(doc.hinweis.trim() !== ""
+      ? [{ text: doc.hinweis, style: "itemComment" as const, margin: [0, 0, 0, 14] as [number, number, number, number] }]
+      : []),
     ...doc.tops.flatMap((top) => buildTop(top, doc)),
-    ...(doc.schlussHinweis.trim() !== "" ? [{ text: doc.schlussHinweis, style: "itemComment" as const, margin: [0, 14, 0, 0] as [number, number, number, number] }] : []),
+    ...(doc.schlussHinweis.trim() !== ""
+      ? [{ text: doc.schlussHinweis, style: "itemComment" as const, margin: [0, 14, 0, 0] as [number, number, number, number] }]
+      : []),
     buildSignatureBlock(doc),
+  ];
+}
+
+export interface BuildDocDefinitionOptions {
+  /** Für Tests/Reproduzierbarkeit: fester Zeitstempel statt "jetzt". */
+  now?: Date;
+}
+
+export function buildDocDefinition(doc: AgendaDocument, options: BuildDocDefinitionOptions = {}): TDocumentDefinitions {
+  const now = options.now ?? new Date();
+
+  const content: Content[] = [
+    ...buildNiederschrift(doc, now),
+    ...buildAnlage1(doc),
+    ...buildAnlage2(doc),
+    ...buildAnlage3(doc),
   ];
 
   return {
     pageSize: "A4",
     pageMargins: pdfTokens.pageMargins,
     info: {
-      title: doc.titel,
-      subject: "Anlage zum VOB-Abnahmeprotokoll",
+      title: `Niederschrift Abnahme – ${doc.header.projekt || doc.titel}`,
+      subject: "Niederschrift – Abnahme nach VOB/B § 12",
     },
     header: (currentPage) =>
       currentPage > 1
         ? {
-            text: `VOB-Abnahme · ${doc.header.projekt || doc.titel} · ${formatDateDe(doc.header.datum) || ""}`,
-            style: "headerText",
+            columns: [
+              { text: "Abnahme", style: "headerText" },
+              buildWordmark(),
+            ],
             margin: [50, 22, 50, 0] as [number, number, number, number],
           }
         : undefined,
-    footer: (currentPage, pageCount) => ({
-      stack: [
-        {
-          canvas: [{ type: "line", x1: 50, y1: 0, x2: 545, y2: 0, lineWidth: 0.5, lineColor: pdfColors.grey }],
-        },
-        {
-          text: `Anlage zum VOB-Abnahmeprotokoll · Seite ${currentPage} von ${pageCount}`,
-          style: "footerText",
-          alignment: "center",
-          margin: [50, 4, 50, 0] as [number, number, number, number],
-        },
-      ],
-      margin: [0, 4, 0, 0] as [number, number, number, number],
-    }),
+    footer: (currentPage, pageCount) => buildLegalFooter(currentPage, pageCount, now),
     content,
     styles,
     defaultStyle,

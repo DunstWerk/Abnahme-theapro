@@ -34,10 +34,29 @@ export function compileMaengel(doc: AgendaDocument): MangelEntry[] {
     itemUid: f.item.uid,
     beschreibung: f.item.text,
     kommentar: f.item.kommentar,
+    ortKurz: f.ortLabel,
     ortLabel: `${f.ortLabel} › ${truncate(f.item.text)}`,
     schweregrad: f.item.schweregrad,
     frist: f.item.frist,
   }));
+}
+
+/** "1 – 4" (mehrere), "1" (genau ein Mangel) oder "" (keine) – für §3.1 der Niederschrift. */
+export function maengelNummernBereich(doc: AgendaDocument): string {
+  const n = compileMaengel(doc).length;
+  if (n === 0) return "";
+  if (n === 1) return "1";
+  return `1 – ${n}`;
+}
+
+export function countMaengelBySchweregrad(doc: AgendaDocument): { wesentlich: number; unwesentlich: number; ohne: number } {
+  const result = { wesentlich: 0, unwesentlich: 0, ohne: 0 };
+  for (const m of compileMaengel(doc)) {
+    if (m.schweregrad === "wesentlich") result.wesentlich += 1;
+    else if (m.schweregrad === "unwesentlich") result.unwesentlich += 1;
+    else result.ohne += 1;
+  }
+  return result;
 }
 
 export interface TopProgress {

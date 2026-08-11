@@ -9,7 +9,7 @@ beschreibt die Syntax.
 
 ```markdown
 ---
-format: vob-abnahme-agenda/1
+format: vob-abnahme-agenda/2
 exported: 2026-09-03T11:42:00Z
 ---
 
@@ -18,9 +18,13 @@ exported: 2026-09-03T11:42:00Z
 ## Rahmendaten
 
 - **Projekt:** ...
+- **Gewerk / Art der Arbeiten:** ...
+- **Auftragsnummer:** ...
 - **Auftraggeber (AG):** ...
+- **Anschrift (AG):** ...
 - **Auftragnehmer (AN):** ...
 - **Fachplanung:** ...
+- **Bearbeiter:** ...
 - **Datum:** 2026-09-03
 - **Uhrzeit:** 09:00
 - **Ort:** ...
@@ -47,10 +51,50 @@ Freitext.
 ## Schlusshinweis
 
 Freitext.
+
+## Abnahmeergebnis
+
+- **Ergebnis:** ...
+- **Frist zur Mängelbeseitigung:** ...
+- **Frist angemessen:** ja
+- **Fertigstellung:** ...
+
+## Verjährungsfristen
+
+| Nr. | Anlagenteil | Beginn | Ende |
+|---|---|---|---|
+| ... | ... | ... | ... |
+
+## Verjährungsfristen bei Wartungsvertrag
+
+- **Für die Nr.:** ...
+
+| Nr. | Anlagenteil | Beginn | Ende |
+|---|---|---|---|
+
+## Sonstiges
+
+Freitext (nur wenn ausgefüllt).
+
+## Unterschriften
+
+| Name | Funktion |
+|---|---|
+| ... | ... |
+
+## Feststellungen und Festlegungen
+
+| Bezeichnung | Beschreibung | Zuständig | Frist |
+|---|---|---|---|
+| ... | ... | ... | ... |
 ```
 
 Der `---`-Block am Anfang ist optional und rein informativ (Format-Version,
-Export-Zeitpunkt). Fehlt er, wird trotzdem normal eingelesen.
+Export-Zeitpunkt). Fehlt er, wird trotzdem normal eingelesen. Alle
+Abschnitte ab "Abnahmeergebnis" sind optional – solange die Niederschrift
+noch nicht ausgefüllt ist (typischerweise während der Begehung, wenn nur
+die Checkliste bearbeitet wird), müssen sie in der Datei nicht vorkommen;
+es gelten dann die leeren Standardwerte.
 
 ## Status je Punkt
 
@@ -136,6 +180,40 @@ zusammengestellte Mängelliste erscheinen soll (üblicherweise beim TOP
 
 Fehlt dieser Marker, wird die Mängelliste automatisch vor dem TOP
 "Abschluss" eingefügt.
+
+## Niederschrift (Abnahmeprotokoll)
+
+Zusätzlich zur Checkliste erzeugt die App auch die formelle "Niederschrift
+- Abnahme nach VOB/B § 12" inkl. Anlagen. Der Briefkopf und die
+rechtlichen Angaben (Adresse, Bank, HRB, Geschäftsführung) sind fest im
+PDF-Code hinterlegt und **nicht** Teil dieser Markdown-Datei – nur die
+folgenden, von Termin zu Termin unterschiedlichen Inhalte werden hier
+gespeichert:
+
+- **`## Abnahmeergebnis`** (§3): `Ergebnis` ist `ohne Mängel`,
+  `nicht abgenommen` oder `mit Mängeln`; `Frist angemessen` ist `ja`
+  oder `nein`; `Fertigstellung` ist `termingerecht` oder
+  `nicht termingerecht`. Akzeptierte Aliase u. a.: `ohne Mangel`,
+  `mängelfrei` → ohne Mängel; `verweigert` → nicht abgenommen; `mit
+  Vorbehalt` → mit Mängeln; `verspätet`/`verzug` → nicht termingerecht.
+- **`## Verjährungsfristen`** (§4.1) und **`## Verjährungsfristen bei
+  Wartungsvertrag`** (§4.2, mit zusätzlichem Bullet `Für die Nr.:`):
+  `Beginn`/`Ende` sind bewusst Freitext (auch "mit Abnahme" o. ä.), kein
+  Datumszwang.
+- **`## Sonstiges`** (§5): Freitext, wird nur exportiert, wenn ausgefüllt.
+- **`## Unterschriften`** (§6): beliebig viele Namen/Funktionen; die
+  Zeile "Datum, Bearbeiter" oberhalb wird automatisch aus `Datum` und
+  `Bearbeiter` der Rahmendaten gebildet, nicht separat gespeichert.
+- **`## Feststellungen und Festlegungen`** (Anlage 2): frei gepflegte
+  Liste, unabhängig von der Checkliste – für allgemeine Notizen/
+  Entscheidungen, die keine Mängel sind (die Mängelliste für Anlage 1
+  wird weiterhin automatisch aus den mit "Mangel" markierten
+  Checklisten-Punkten zusammengestellt).
+
+In Tabellenzellen dieser Abschnitte werden `|` als `\|` und
+Zeilenumbrüche (z. B. bei einer mehrzeiligen Feststellungs-Beschreibung)
+als `<br>` kodiert, damit sie innerhalb einer GFM-Tabellenzeile gültig
+bleiben. Die Teilnehmer-Tabelle ist davon nicht betroffen.
 
 ## Eigene Agenda für eine andere Abnahme erstellen
 

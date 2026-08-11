@@ -3,12 +3,21 @@ import type {
   AgendaDocument,
   AgendaHeader,
   ChecklistItem,
+  Feststellung,
   ItemStatus,
+  Niederschrift,
   ParseWarning,
   Schweregrad,
   Teilnehmer,
+  Unterschrift,
+  Verjaehrungsfrist,
 } from "../types/agenda";
-import { createEmptyAgenda } from "../types/agenda";
+import {
+  createEmptyAgenda,
+  createEmptyFeststellung,
+  createEmptyUnterschrift,
+  createEmptyVerjaehrungsfrist,
+} from "../types/agenda";
 import { parseAgenda } from "../markdown/parseAgenda";
 import { serializeAgenda } from "../markdown/serializeAgenda";
 import { backupCurrent, loadPersisted, scheduleSave } from "./persistence";
@@ -58,6 +67,9 @@ function updateItemInDoc(doc: AgendaDocument, uid: string, fn: (item: ChecklistI
   return { ...doc, tops: newTops };
 }
 
+export type VerjaehrungListe = "verjaehrung" | "verjaehrungWartung";
+type NiederschriftScalarField = "ergebnis" | "maengelbeseitigungFrist" | "fristAngemessen" | "termintreue" | "sonstiges" | "wartungsvertragNr";
+
 interface AgendaState {
   doc: AgendaDocument;
   lastSavedAt: string | null;
@@ -78,6 +90,20 @@ interface AgendaState {
   addTeilnehmer: () => void;
   updateTeilnehmer: (uid: string, patch: Partial<Omit<Teilnehmer, "uid">>) => void;
   removeTeilnehmer: (uid: string) => void;
+
+  setNiederschriftField: <K extends NiederschriftScalarField>(field: K, value: Niederschrift[K]) => void;
+
+  addVerjaehrung: (liste: VerjaehrungListe) => void;
+  updateVerjaehrung: (liste: VerjaehrungListe, uid: string, patch: Partial<Omit<Verjaehrungsfrist, "uid">>) => void;
+  removeVerjaehrung: (liste: VerjaehrungListe, uid: string) => void;
+
+  addUnterschrift: () => void;
+  updateUnterschrift: (uid: string, patch: Partial<Omit<Unterschrift, "uid">>) => void;
+  removeUnterschrift: (uid: string) => void;
+
+  addFeststellung: () => void;
+  updateFeststellung: (uid: string, patch: Partial<Omit<Feststellung, "uid">>) => void;
+  removeFeststellung: (uid: string) => void;
 
   toggleTopCollapsed: (uid: string) => void;
   setFilter: (filter: ItemFilter) => void;
@@ -206,6 +232,113 @@ export const useAgendaStore = create<AgendaState>((set, get) => {
     removeTeilnehmer: (uid) =>
       set((state) => {
         const doc = { ...state.doc, teilnehmer: state.doc.teilnehmer.filter((t) => t.uid !== uid) };
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    setNiederschriftField: (field, value) =>
+      set((state) => {
+        const doc = { ...state.doc, niederschrift: { ...state.doc.niederschrift, [field]: value } };
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    addVerjaehrung: (liste) =>
+      set((state) => {
+        const eintrag = createEmptyVerjaehrungsfrist();
+        const doc = {
+          ...state.doc,
+          niederschrift: { ...state.doc.niederschrift, [liste]: [...state.doc.niederschrift[liste], eintrag] },
+        };
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    updateVerjaehrung: (liste, uid, patch) =>
+      set((state) => {
+        const doc = {
+          ...state.doc,
+          niederschrift: {
+            ...state.doc.niederschrift,
+            [liste]: state.doc.niederschrift[liste].map((v) => (v.uid === uid ? { ...v, ...patch } : v)),
+          },
+        };
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    removeVerjaehrung: (liste, uid) =>
+      set((state) => {
+        const doc = {
+          ...state.doc,
+          niederschrift: {
+            ...state.doc.niederschrift,
+            [liste]: state.doc.niederschrift[liste].filter((v) => v.uid !== uid),
+          },
+        };
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    addUnterschrift: () =>
+      set((state) => {
+        const doc = {
+          ...state.doc,
+          niederschrift: {
+            ...state.doc.niederschrift,
+            unterschriften: [...state.doc.niederschrift.unterschriften, createEmptyUnterschrift()],
+          },
+        };
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    updateUnterschrift: (uid, patch) =>
+      set((state) => {
+        const doc = {
+          ...state.doc,
+          niederschrift: {
+            ...state.doc.niederschrift,
+            unterschriften: state.doc.niederschrift.unterschriften.map((u) => (u.uid === uid ? { ...u, ...patch } : u)),
+          },
+        };
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    removeUnterschrift: (uid) =>
+      set((state) => {
+        const doc = {
+          ...state.doc,
+          niederschrift: {
+            ...state.doc.niederschrift,
+            unterschriften: state.doc.niederschrift.unterschriften.filter((u) => u.uid !== uid),
+          },
+        };
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    addFeststellung: () =>
+      set((state) => {
+        const doc = { ...state.doc, feststellungen: [...state.doc.feststellungen, createEmptyFeststellung()] };
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    updateFeststellung: (uid, patch) =>
+      set((state) => {
+        const doc = {
+          ...state.doc,
+          feststellungen: state.doc.feststellungen.map((f) => (f.uid === uid ? { ...f, ...patch } : f)),
+        };
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    removeFeststellung: (uid) =>
+      set((state) => {
+        const doc = { ...state.doc, feststellungen: state.doc.feststellungen.filter((f) => f.uid !== uid) };
         afterChange(doc);
         return { doc, dirtySinceExport: true };
       }),

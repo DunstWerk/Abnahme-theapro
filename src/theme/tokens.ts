@@ -25,5 +25,5 @@ export const pdf = {
     top: 13,
     sub: 11,
   },
-  pageMargins: [50, 62, 50, 55] as [number, number, number, number],
+  pageMargins: [50, 62, 50, 90] as [number, number, number, number],
 } as const;

@@ -9,6 +9,12 @@ import HinweisBlock from "./components/HinweisBlock";
 import MaengelPanel from "./components/MaengelPanel";
 import ImportWarnings from "./components/ImportWarnings";
 import TopSection from "./components/TopSection";
+import AbnahmeErgebnisForm from "./components/AbnahmeErgebnisForm";
+import VerjaehrungsfristenTable from "./components/VerjaehrungsfristenTable";
+import UnterschriftenTable from "./components/UnterschriftenTable";
+import FeststellungenPanel from "./components/FeststellungenPanel";
+import DebouncedInput from "./components/DebouncedInput";
+import formStyles from "./components/forms.module.css";
 import styles from "./components/layout.module.css";
 
 export default function App() {
@@ -16,6 +22,7 @@ export default function App() {
   const dirtySinceExport = useAgendaStore((s) => s.dirtySinceExport);
   const setHinweis = useAgendaStore((s) => s.setHinweis);
   const setSchlussHinweis = useAgendaStore((s) => s.setSchlussHinweis);
+  const setNiederschriftField = useAgendaStore((s) => s.setNiederschriftField);
 
   useEffect(() => registerFlushOnUnload(), []);
 
@@ -44,6 +51,26 @@ export default function App() {
             <TopSection key={top.uid} top={top} />
           ))}
           <HinweisBlock label="Schlusshinweis" value={doc.schlussHinweis} onChange={setSchlussHinweis} />
+
+          <AbnahmeErgebnisForm />
+          <VerjaehrungsfristenTable titel="Verjährungsfristen für Mängelansprüche" liste="verjaehrung" />
+          <VerjaehrungsfristenTable titel="Verjährungsfristen bei Wartungsvertrag" liste="verjaehrungWartung">
+            <label className={formStyles.field} style={{ maxWidth: 260, marginBottom: 12 }}>
+              Für die Nr. (aus obiger Aufstellung)
+              <DebouncedInput
+                uid="wartungsvertragNr"
+                initialValue={doc.niederschrift.wartungsvertragNr}
+                onCommit={(v) => setNiederschriftField("wartungsvertragNr", v)}
+              />
+            </label>
+          </VerjaehrungsfristenTable>
+          <HinweisBlock
+            label="Sonstiges"
+            value={doc.niederschrift.sonstiges}
+            onChange={(v) => setNiederschriftField("sonstiges", v)}
+          />
+          <UnterschriftenTable />
+          <FeststellungenPanel />
         </main>
       </div>
     </div>

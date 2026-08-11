@@ -1,5 +1,14 @@
-import type { AgendaDocument, ChecklistItem, ParseWarning, Top, Teilnehmer } from "../types/agenda";
-import { createEmptyAgenda, createEmptyItem } from "../types/agenda";
+import type {
+  AgendaDocument,
+  ChecklistItem,
+  Feststellung,
+  ParseWarning,
+  Top,
+  Teilnehmer,
+  Unterschrift,
+  Verjaehrungsfrist,
+} from "../types/agenda";
+import { createEmptyAgenda, createEmptyItem, createEmptyFeststellung, createEmptyUnterschrift, createEmptyVerjaehrungsfrist } from "../types/agenda";
 import {
   ANCHOR_RE,
   CHECKBOX_TO_STATUS,
@@ -17,9 +26,18 @@ import {
   TOP_LEVEL_HEADING_RE,
   TOP_TITLE_RE,
   isReservedSection,
+  matchErgebnisLabel,
   matchHeaderLabel,
+  splitTableRow,
 } from "./dialect";
-import { normalizeDate, normalizeSchweregrad, normalizeStatus } from "./normalize";
+import {
+  normalizeDate,
+  normalizeErgebnis,
+  normalizeJaNein,
+  normalizeSchweregrad,
+  normalizeStatus,
+  normalizeTermintreue,
+} from "./normalize";
 
 interface Line {
   text: string;
@@ -99,6 +117,18 @@ export function parseAgenda(raw: string): AgendaDocument {
       doc.hinweis = joinFreitext(content);
     } else if (reserved === "schlusshinweis") {
       doc.schlussHinweis = joinFreitext(content);
+    } else if (reserved === "abnahmeergebnis") {
+      parseAbnahmeergebnis(content, doc, warnings);
+    } else if (reserved === "verjaehrung") {
+      doc.niederschrift.verjaehrung = parseVerjaehrungTable(content, warnings);
+    } else if (reserved === "verjaehrungWartung") {
+      parseVerjaehrungWartung(content, doc, warnings);
+    } else if (reserved === "sonstiges") {
+      doc.niederschrift.sonstiges = joinFreitext(content);
+    } else if (reserved === "unterschriften") {
+      doc.niederschrift.unterschriften = parseUnterschriften(content, warnings);
+    } else if (reserved === "feststellungen") {
+      doc.feststellungen = parseFeststellungen(content, warnings);
     } else {
       doc.tops.push(parseTop(headingText, content, warnings));
     }
@@ -174,6 +204,119 @@ function parseTeilnehmer(lines: Line[], warnings: ParseWarning[]): Teilnehmer[] 
     });
   }
   return teilnehmer;
+}
+
+/** Liest die Datenzeilen einer GFM-Tabelle (erste Zeile = Header wird übersprungen, Escaping via splitTableRow). */
+function readTableRows(lines: Line[], warnings: ParseWarning[], context: string): string[][] {
+  const rows = lines.filter((l) => TABLE_ROW_RE.test(l.text) || TABLE_SEP_RE.test(l.text.trim()));
+  if (rows.length === 0) return [];
+
+  const dataRows = rows.filter((l) => !TABLE_SEP_RE.test(l.text.trim())).slice(1);
+  const result: string[][] = [];
+  for (const row of dataRows) {
+    const m = TABLE_ROW_RE.exec(row.text);
+    if (!m) {
+      warnings.push({ line: row.no, message: `${context}-Zeile konnte nicht gelesen werden: "${row.text.trim()}"`, severity: "warn" });
+      continue;
+    }
+    const cells = splitTableRow(m[1]);
+    if (cells.every((c) => c === "")) continue;
+    result.push(cells);
+  }
+  return result;
+}
+
+function parseAbnahmeergebnis(lines: Line[], doc: AgendaDocument, warnings: ParseWarning[]): void {
+  for (const line of lines) {
+    if (line.text.trim() === "") continue;
+    const m = HEADER_BULLET_RE.exec(line.text);
+    if (!m) {
+      warnings.push({ line: line.no, message: `Unerwartete Zeile in Abnahmeergebnis ignoriert: "${line.text.trim()}"`, severity: "warn" });
+      continue;
+    }
+    const label = m[1].trim();
+    const value = m[2].trim();
+    const field = matchErgebnisLabel(label);
+    if (field === "ergebnis") {
+      const v = normalizeErgebnis(value);
+      if (value !== "" && !v) {
+        warnings.push({ line: line.no, message: `Unbekanntes Ergebnis "${value}" ignoriert.`, severity: "warn" });
+      }
+      doc.niederschrift.ergebnis = v;
+    } else if (field === "maengelbeseitigungFrist") {
+      if (value === "") {
+        doc.niederschrift.maengelbeseitigungFrist = null;
+      } else {
+        const d = normalizeDate(value);
+        if (d) {
+          doc.niederschrift.maengelbeseitigungFrist = d;
+        } else {
+          warnings.push({ line: line.no, message: `Unlesbares Datum "${value}" bei Frist zur Mängelbeseitigung ignoriert.`, severity: "warn" });
+        }
+      }
+    } else if (field === "fristAngemessen") {
+      doc.niederschrift.fristAngemessen = normalizeJaNein(value);
+    } else if (field === "termintreue") {
+      const v = normalizeTermintreue(value);
+      if (value !== "" && !v) {
+        warnings.push({ line: line.no, message: `Unbekannte Fertigstellung "${value}" ignoriert.`, severity: "warn" });
+      }
+      doc.niederschrift.termintreue = v;
+    } else {
+      doc.niederschrift.weitere[label] = value;
+    }
+  }
+}
+
+function parseVerjaehrungTable(lines: Line[], warnings: ParseWarning[]): Verjaehrungsfrist[] {
+  return readTableRows(lines, warnings, "Verjährungsfrist").map((cells) => ({
+    ...createEmptyVerjaehrungsfrist(),
+    nr: cells[0] ?? "",
+    anlagenteil: cells[1] ?? "",
+    beginn: cells[2] ?? "",
+    ende: cells[3] ?? "",
+  }));
+}
+
+function parseVerjaehrungWartung(lines: Line[], doc: AgendaDocument, warnings: ParseWarning[]): void {
+  for (const line of lines) {
+    if (line.text.trim() === "") continue;
+    const m = HEADER_BULLET_RE.exec(line.text);
+    if (m && m[1].trim().toLowerCase().includes("nr")) {
+      doc.niederschrift.wartungsvertragNr = m[2].trim();
+    }
+  }
+  doc.niederschrift.verjaehrungWartung = parseVerjaehrungTable(lines, warnings);
+}
+
+function parseUnterschriften(lines: Line[], warnings: ParseWarning[]): Unterschrift[] {
+  return readTableRows(lines, warnings, "Unterschrift").map((cells) => ({
+    ...createEmptyUnterschrift(),
+    name: cells[0] ?? "",
+    funktion: cells[1] ?? "",
+  }));
+}
+
+function parseFeststellungen(lines: Line[], warnings: ParseWarning[]): Feststellung[] {
+  return readTableRows(lines, warnings, "Feststellung").map((cells) => {
+    const fristRaw = (cells[3] ?? "").trim();
+    let frist: string | null = null;
+    if (fristRaw !== "") {
+      const d = normalizeDate(fristRaw);
+      if (d) {
+        frist = d;
+      } else {
+        warnings.push({ line: 0, message: `Unlesbares Datum "${fristRaw}" bei Feststellung ignoriert.`, severity: "warn" });
+      }
+    }
+    return {
+      ...createEmptyFeststellung(),
+      bezeichnung: cells[0] ?? "",
+      beschreibung: cells[1] ?? "",
+      zustaendig: cells[2] ?? "",
+      frist,
+    };
+  });
 }
 
 function parseTop(headingText: string, content: Line[], warnings: ParseWarning[]): Top {

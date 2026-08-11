@@ -10,9 +10,13 @@ function buildSampleDoc(): AgendaDocument {
   doc.titel = "VOB-Abnahme – Medientechnik, Deutsches Theater Göttingen";
   doc.header = {
     projekt: "Medientechnik Deutsches Theater Göttingen",
+    gewerk: "Medientechnik",
+    auftragsnummer: "25-776",
     auftraggeber: "Stadt Göttingen",
+    auftraggeberAdresse: "Neues Rathaus Hiroschimaplatz, 37083 Göttingen",
     auftragnehmer: "Muster Medientechnik GmbH",
     fachplanung: "theapro GmbH",
+    bearbeiter: "Ralf Preller",
     datum: "2026-09-03",
     uhrzeit: "09:00",
     ort: "Deutsches Theater Göttingen, Bühnenhaus",
@@ -84,6 +88,34 @@ function buildSampleDoc(): AgendaDocument {
 
   doc.tops = [top1, top2, top4];
   doc.schlussHinweis = "Hinweis: Diese Agenda basiert auf dem Beispielprojekt.";
+
+  doc.niederschrift = {
+    ergebnis: "mitMaengeln",
+    maengelbeseitigungFrist: "2026-09-30",
+    fristAngemessen: true,
+    termintreue: "termingerecht",
+    verjaehrung: [
+      { uid: "v1", nr: "1", anlagenteil: "Inspizientenanlage | Pult", beginn: "18.08.2026", ende: "17.08.2030" },
+    ],
+    verjaehrungWartung: [{ uid: "v2", nr: "1", anlagenteil: "Inspizientenanlage", beginn: "mit Wartungsvertrag", ende: "" }],
+    wartungsvertragNr: "1",
+    sonstiges: "Erste Zeile.\nZweite Zeile.",
+    unterschriften: [
+      { uid: "u1", name: "Preller, Ralf", funktion: "Fachplanung" },
+      { uid: "u2", name: "Dallmeier, Robby", funktion: "" },
+    ],
+    weitere: {},
+  };
+  doc.feststellungen = [
+    {
+      uid: "f1",
+      bezeichnung: "Regieplatz",
+      beschreibung: "Restarbeiten Kabelführung,\nzweite Zeile mit | Pipe.",
+      zustaendig: "AN",
+      frist: "2026-09-15",
+    },
+  ];
+
   return doc;
 }
 
@@ -123,6 +155,28 @@ describe("serializeAgenda / parseAgenda round-trip", () => {
     expect(entfaellt.status).toBe("entfaellt");
 
     expect(parsed.tops[2].maengelAnchor).toBe(true);
+
+    expect(parsed.header.gewerk).toBe(doc.header.gewerk);
+    expect(parsed.header.auftragsnummer).toBe(doc.header.auftragsnummer);
+    expect(parsed.header.auftraggeberAdresse).toBe(doc.header.auftraggeberAdresse);
+    expect(parsed.header.bearbeiter).toBe(doc.header.bearbeiter);
+
+    expect(parsed.niederschrift.ergebnis).toBe("mitMaengeln");
+    expect(parsed.niederschrift.maengelbeseitigungFrist).toBe("2026-09-30");
+    expect(parsed.niederschrift.fristAngemessen).toBe(true);
+    expect(parsed.niederschrift.termintreue).toBe("termingerecht");
+    expect(parsed.niederschrift.verjaehrung).toHaveLength(1);
+    expect(parsed.niederschrift.verjaehrung[0].anlagenteil).toBe("Inspizientenanlage | Pult");
+    expect(parsed.niederschrift.verjaehrungWartung).toHaveLength(1);
+    expect(parsed.niederschrift.wartungsvertragNr).toBe("1");
+    expect(parsed.niederschrift.sonstiges).toBe("Erste Zeile.\nZweite Zeile.");
+    expect(parsed.niederschrift.unterschriften).toHaveLength(2);
+    expect(parsed.niederschrift.unterschriften[1].name).toBe("Dallmeier, Robby");
+
+    expect(parsed.feststellungen).toHaveLength(1);
+    expect(parsed.feststellungen[0].bezeichnung).toBe("Regieplatz");
+    expect(parsed.feststellungen[0].beschreibung).toBe("Restarbeiten Kabelführung,\nzweite Zeile mit | Pipe.");
+    expect(parsed.feststellungen[0].frist).toBe("2026-09-15");
   });
 
   it("ein unbenutztes, frisch offenes Item wird ohne Metadaten-Zeilen serialisiert", () => {

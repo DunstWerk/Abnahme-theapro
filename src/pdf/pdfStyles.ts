@@ -25,4 +25,7 @@ export const styles = {
   headerText: { fontSize: 8, color: "#777777" },
   mangelWesentlich: { bold: true, color: colors.coral },
   signatureLabel: { fontSize: 8, color: "#555555" },
+  anlageTitle: { fontSize: 13, bold: true, color: colors.coral },
+  letterheadLabel: { fontSize: 9, color: "#555555" },
+  legalFooter: { fontSize: 6.5, color: "#777777", lineHeight: 1.15 },
 };

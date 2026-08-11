@@ -5,9 +5,13 @@ import styles from "./forms.module.css";
 
 const FIELD_ORDER: (keyof Omit<AgendaHeader, "weitere">)[] = [
   "projekt",
+  "gewerk",
+  "auftragsnummer",
   "auftraggeber",
+  "auftraggeberAdresse",
   "auftragnehmer",
   "fachplanung",
+  "bearbeiter",
   "datum",
   "uhrzeit",
   "ort",

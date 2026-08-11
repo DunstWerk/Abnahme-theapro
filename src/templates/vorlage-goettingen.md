@@ -1,5 +1,5 @@
 ---
-format: vob-abnahme-agenda/1
+format: vob-abnahme-agenda/2
 exported: 2026-08-11T00:00:00Z
 ---
 
@@ -7,10 +7,14 @@ exported: 2026-08-11T00:00:00Z
 
 ## Rahmendaten
 
-- **Projekt:** 25-776 – Erneuerung Inspizientensystem, Deutsches Theater Göttingen
+- **Projekt:** Erneuerung Inspizientensystem, Deutsches Theater Göttingen
+- **Gewerk / Art der Arbeiten:** Medientechnik
+- **Auftragsnummer:** 25-776
 - **Auftraggeber (AG):** Stadt Göttingen
+- **Anschrift (AG):** Neues Rathaus Hiroschimaplatz, 37083 Göttingen
 - **Auftragnehmer (AN):** Action-Light Veranstaltungstechnik GmbH
 - **Fachplanung:** theapro GmbH
+- **Bearbeiter:** 
 - **Datum:** 
 - **Uhrzeit:** 
 - **Ort:** 
@@ -105,3 +109,32 @@ Das Aufmaß mit allen Lieferungen wurde bereits vorab erstellt und ist nicht meh
 ## Schlusshinweis
 
 Diese Agenda basiert auf den im LV enthaltenen Titeln (Netzwerktechnik, Inspizientenanlage, Intercomanlage, Mitschauanlage, Lichtzeichenanlage, Medienkästen, Patchfelder, Mithör- und Rufanlage). Reine Ausführungs-/Nebenleistungen ohne eigene Funktionsprüfung (Vertragliches/ZTV, Leitungen, Tragsysteme, Brandschutzmaßnahmen, Niederspannungsanlage, Allgemeinleistungen) wurden bewusst nicht aufgenommen.
+
+## Abnahmeergebnis
+
+- **Ergebnis:** 
+- **Frist zur Mängelbeseitigung:** 
+- **Frist angemessen:** nein
+- **Fertigstellung:** 
+
+## Verjährungsfristen
+
+| Nr. | Anlagenteil | Beginn | Ende |
+|---|---|---|---|
+
+## Verjährungsfristen bei Wartungsvertrag
+
+- **Für die Nr.:** 
+
+| Nr. | Anlagenteil | Beginn | Ende |
+|---|---|---|---|
+
+## Unterschriften
+
+| Name | Funktion |
+|---|---|
+
+## Feststellungen und Festlegungen
+
+| Bezeichnung | Beschreibung | Zuständig | Frist |
+|---|---|---|---|

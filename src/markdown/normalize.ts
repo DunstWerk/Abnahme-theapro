@@ -1,4 +1,4 @@
-import type { ItemStatus, Schweregrad } from "../types/agenda";
+import type { AbnahmeErgebnisArt, ItemStatus, Schweregrad, Termintreue } from "../types/agenda";
 
 const STATUS_ALIASES: Record<string, ItemStatus> = {
   "": "offen",
@@ -32,6 +32,32 @@ export function normalizeSchweregrad(raw: string): Schweregrad | null {
   if (lower.includes("unwesentlich")) return "unwesentlich";
   if (lower.includes("wesentlich")) return "wesentlich";
   return null;
+}
+
+export function normalizeErgebnis(raw: string): AbnahmeErgebnisArt | null {
+  const lower = raw.trim().toLowerCase();
+  if (lower === "") return null;
+  if (lower.includes("ohne mängel") || lower.includes("ohne maengel") || lower.includes("ohne mangel") || lower.includes("mängelfrei")) {
+    return "ohneMaengel";
+  }
+  if (lower.includes("nicht abgenommen") || lower.includes("verweigert")) return "nichtAbgenommen";
+  if (lower.includes("mit mängeln") || lower.includes("mit maengeln") || lower.includes("vorbehalt")) return "mitMaengeln";
+  return null;
+}
+
+export function normalizeTermintreue(raw: string): Termintreue | null {
+  const lower = raw.trim().toLowerCase();
+  if (lower === "") return null;
+  if (lower.includes("nicht termingerecht") || lower.includes("verspätet") || lower.includes("verzug")) {
+    return "nichtTermingerecht";
+  }
+  if (lower.includes("termingerecht") || lower.includes("fristgerecht")) return "termingerecht";
+  return null;
+}
+
+export function normalizeJaNein(raw: string): boolean {
+  const lower = raw.trim().toLowerCase();
+  return lower === "ja" || lower === "j" || lower === "yes" || lower === "x" || lower === "true" || lower === "✓";
 }
 
 function isValidCalendarDate(year: number, month: number, day: number): boolean {
