@@ -1,0 +1,64 @@
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--c-coral);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-4);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: #fdf0ed;
+  cursor: pointer;
+}
+
+.headerTitle {
+  font-weight: 700;
+  color: var(--c-ink);
+}
+
+.count {
+  background: var(--c-coral);
+  color: var(--c-white);
+  border-radius: 999px;
+  padding: 2px 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.body {
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table th {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 2px solid var(--c-coral);
+  color: #555;
+}
+
+.table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--surface-muted);
+  vertical-align: top;
+}
+
+.wesentlich {
+  color: var(--c-coral);
+  font-weight: 700;
+}
+
+.empty {
+  padding: var(--space-3) var(--space-4);
+  color: #777;
+  font-size: 0.9rem;
+}

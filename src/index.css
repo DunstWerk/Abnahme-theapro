@@ -1,0 +1,80 @@
+@import "@fontsource/arimo/400.css";
+@import "@fontsource/arimo/400-italic.css";
+@import "@fontsource/arimo/700.css";
+@import "@fontsource/arimo/700-italic.css";
+
+:root {
+  --c-coral: #ed6950;
+  --c-ice: #b3ddde;
+  --c-grey: #bfd2d4;
+  --c-olive: #7b9b47;
+  --c-white: #ffffff;
+  --c-ink: #1a1a1a;
+
+  --status-offen: var(--c-grey);
+  --status-io: var(--c-olive);
+  --status-mangel: var(--c-coral);
+  --status-entfaellt: #8a8a8a;
+
+  --accent: var(--c-coral);
+  --surface: var(--c-white);
+  --surface-muted: #f7f9f9;
+  --border: var(--c-grey);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --radius: 6px;
+  --font-sans:
+    "Arimo", Arial, Helvetica, sans-serif;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--surface-muted);
+  color: var(--c-ink);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--c-coral);
+}
