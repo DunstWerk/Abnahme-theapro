@@ -195,7 +195,7 @@ export function buildDocDefinition(doc: AgendaDocument, options: BuildDocDefinit
         ? {
             columns: [
               { text: "Abnahme", style: "headerText" },
-              buildWordmark(),
+              buildWordmark(65),
             ],
             margin: [50, 22, 50, 0] as [number, number, number, number],
           }

@@ -3,6 +3,7 @@ import type { AgendaDocument } from "../types/agenda";
 import { formatDateDe } from "../markdown/normalize";
 import { pdfColors } from "./pdfStyles";
 import { borderlessLayout } from "./pdfLayouts";
+import logoPng from "../assets/theapro-logo.png?inline";
 
 /** Feste Firmen-/Briefkopfdaten. Ändern sich praktisch nie – zentrale Stelle für Anpassungen. */
 export const COMPANY = {
@@ -22,13 +23,13 @@ export const COMPANY = {
 } as const;
 
 /**
- * Platzhalter für den theapro-Schriftzug, solange keine echte Logo-Bilddatei vorliegt.
- * Für ein echtes Logo: Bilddatei unter src/assets/ ablegen, per `import logo from "./logo.png?inline"`
- * importieren (Vite liefert dann eine Data-URL) und hier stattdessen
- * `{ image: logo, width: 110, alignment: "right" }` zurückgeben.
+ * theapro-Schriftzug (src/assets/theapro-logo.png). `width` steuert die Darstellungsgröße
+ * (Seitenverhältnis bleibt erhalten) – im vollen Briefkopf (Seite 1) größer als in der
+ * schmaleren laufenden Kopfzeile ab Seite 2. Bei einem neuen Corporate-Design einfach die
+ * Bilddatei austauschen, der Import bleibt gleich.
  */
-export function buildWordmark(): Content {
-  return { text: "theapro", color: pdfColors.coral, bold: true, fontSize: 18, characterSpacing: 0.5, alignment: "right" };
+export function buildWordmark(width = 110): Content {
+  return { image: logoPng, width, alignment: "right" };
 }
 
 export function buildLetterhead(doc: AgendaDocument, now: Date): Content {
