@@ -13,24 +13,27 @@ export default function TopNav() {
   const tops = useAgendaStore((s) => s.doc.tops);
   const filter = useAgendaStore((s) => s.ui.filter);
   const setFilter = useAgendaStore((s) => s.setFilter);
+  const editMode = useAgendaStore((s) => s.ui.editMode);
 
   const progressByTop = useMemo(() => tops.map((t) => computeTopProgress(t)), [tops]);
 
   return (
     <nav className={styles.nav}>
       <div className={styles.navPanel}>
-        <div className={styles.filterRow}>
-          {FILTERS.map((f) => (
-            <button
-              key={f.value}
-              type="button"
-              className={filter === f.value ? styles.filterChipActive : styles.filterChip}
-              onClick={() => setFilter(f.value)}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+        {!editMode && (
+          <div className={styles.filterRow}>
+            {FILTERS.map((f) => (
+              <button
+                key={f.value}
+                type="button"
+                className={filter === f.value ? styles.filterChipActive : styles.filterChip}
+                onClick={() => setFilter(f.value)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        )}
         <ul className={styles.navList}>
           {tops.map((top, idx) => {
             const heading = top.nummer != null ? `TOP ${top.nummer}` : top.titel;

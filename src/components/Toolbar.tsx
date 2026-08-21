@@ -14,6 +14,8 @@ export default function Toolbar() {
   const loadTemplate = useAgendaStore((s) => s.loadTemplate);
   const reset = useAgendaStore((s) => s.reset);
   const markExported = useAgendaStore((s) => s.markExported);
+  const editMode = useAgendaStore((s) => s.ui.editMode);
+  const setEditMode = useAgendaStore((s) => s.setEditMode);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [pending, setPending] = useState<PendingAction>(null);
@@ -97,6 +99,14 @@ export default function Toolbar() {
       </button>
       <button type="button" className={styles.toolbarButton} onClick={() => setPending({ type: "reset" })}>
         Zurücksetzen
+      </button>
+      <button
+        type="button"
+        aria-pressed={editMode}
+        className={editMode ? styles.toolbarButtonToggleActive : styles.toolbarButton}
+        onClick={() => setEditMode(!editMode)}
+      >
+        {editMode ? "✎ Bearbeitungsmodus: an" : "✎ Bearbeitungsmodus"}
       </button>
 
       <span className={styles.toolbarSpacer} />

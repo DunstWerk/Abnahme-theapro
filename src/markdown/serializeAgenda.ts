@@ -1,4 +1,5 @@
 import type { AgendaDocument, ChecklistItem, Top, Verjaehrungsfrist } from "../types/agenda";
+import { formatSectionHeading, formatTopHeading } from "../types/agenda";
 import {
   ANCHOR_LINE,
   CURRENT_FORMAT_VERSION,
@@ -74,14 +75,14 @@ function serializeTeilnehmer(doc: AgendaDocument): string[] {
 }
 
 function serializeTop(top: Top): string[] {
-  const heading = top.nummer != null ? `TOP ${top.nummer} – ${top.titel}` : top.rawHeading;
+  const heading = top.nummer != null ? formatTopHeading(top.nummer, top.titel) : top.rawHeading;
   const lines = [`## ${heading}`, ""];
   const bodyLines = serializeBody(top.preamble, top.items, top.maengelAnchor);
   lines.push(...bodyLines);
 
   for (const section of top.sections) {
     if (lines[lines.length - 1] !== "") lines.push("");
-    const subHeading = section.nummer != null ? `${section.nummer} ${section.titel}` : section.rawHeading;
+    const subHeading = section.nummer != null ? formatSectionHeading(section.nummer, section.titel) : section.rawHeading;
     lines.push(`### ${subHeading}`, "");
     lines.push(...serializeBody(section.preamble, section.items, false));
   }

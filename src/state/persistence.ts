@@ -1,5 +1,6 @@
 const CURRENT_KEY = "abnahme-theapro:v1:current";
 const BACKUP_KEY = "abnahme-theapro:v1:backup";
+const PREFS_KEY = "abnahme-theapro:v1:prefs";
 
 export interface PersistedState {
   schemaVersion: 1;
@@ -73,6 +74,33 @@ export function hasBackup(): boolean {
     return localStorage.getItem(BACKUP_KEY) !== null;
   } catch {
     return false;
+  }
+}
+
+/** Dauerhafte, session-übergreifende App-Einstellung (kein Dokument-Inhalt) –
+ * bewusst ein eigener Key, getrennt von der debounced Dokument-Autosave, damit sie
+ * Reset/Import/Vorlage-Laden übersteht. */
+export interface AppPrefs {
+  skipDeleteConfirm: boolean;
+}
+
+const DEFAULT_PREFS: AppPrefs = { skipDeleteConfirm: false };
+
+export function loadPrefs(): AppPrefs {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (!raw) return { ...DEFAULT_PREFS };
+    return { ...DEFAULT_PREFS, ...(JSON.parse(raw) as Partial<AppPrefs>) };
+  } catch {
+    return { ...DEFAULT_PREFS };
+  }
+}
+
+export function savePrefs(prefs: AppPrefs): void {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  } catch {
+    // ignorieren – Präferenz ist best effort
   }
 }
 

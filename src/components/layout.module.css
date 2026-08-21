@@ -63,6 +63,39 @@
   white-space: nowrap;
 }
 
+.toolbarButtonToggleActive {
+  composes: toolbarButton;
+  background: var(--c-ice);
+  border-color: var(--c-ice);
+  color: var(--c-ink);
+  font-weight: 600;
+}
+
+.toolbarButtonToggleActive:hover {
+  color: var(--c-ink);
+  border-color: var(--c-ice);
+}
+
+.editModeBanner {
+  background: var(--c-ice);
+  color: var(--c-ink);
+  font-size: 0.85rem;
+  padding: var(--space-2) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--c-grey);
+}
+
+.editModeBannerButton {
+  background: transparent;
+  border: 1px solid var(--c-ink);
+  border-radius: var(--radius);
+  padding: 2px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
 .hiddenFileInput {
   display: none;
 }

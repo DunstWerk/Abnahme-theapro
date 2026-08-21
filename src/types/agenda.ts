@@ -257,3 +257,45 @@ export function createEmptyItem(text = ""): ChecklistItem {
     extra: {},
   };
 }
+
+/** Default-Titel für im Bearbeitungsmodus neu angelegte Einträge. Bewusst nicht leer:
+ * ein leerer Titel würde beim Serialisieren z.B. zu "## TOP 5 –" führen, was beim
+ * Re-Import an TOP_TITLE_RE scheitert und die Nummer verliert. */
+export const DEFAULT_TOP_TITEL = "Neues TOP";
+export const DEFAULT_SECTION_TITEL = "Neuer Abschnitt";
+export const DEFAULT_ITEM_TEXT = "Neuer Punkt";
+
+/** Rekonstruiert die "## "-Überschrift eines TOP – von serializeAgenda.ts UND von
+ * createEmptyTop/updateTop im Store genutzt, damit beide Stellen garantiert synchron bleiben. */
+export function formatTopHeading(nummer: string | null, titel: string): string {
+  return nummer != null ? `TOP ${nummer} – ${titel}` : titel;
+}
+
+/** Rekonstruiert die "### "-Überschrift eines Abschnitts, analog zu formatTopHeading. */
+export function formatSectionHeading(nummer: string | null, titel: string): string {
+  return nummer != null ? `${nummer} ${titel}` : titel;
+}
+
+export function createEmptyTop(nummer: string | null, titel: string = DEFAULT_TOP_TITEL): Top {
+  return {
+    uid: crypto.randomUUID(),
+    rawHeading: formatTopHeading(nummer, titel),
+    nummer,
+    titel,
+    preamble: [],
+    items: [],
+    sections: [],
+    maengelAnchor: false,
+  };
+}
+
+export function createEmptySubSection(nummer: string | null, titel: string = DEFAULT_SECTION_TITEL): SubSection {
+  return {
+    uid: crypto.randomUUID(),
+    rawHeading: formatSectionHeading(nummer, titel),
+    nummer,
+    titel,
+    preamble: [],
+    items: [],
+  };
+}

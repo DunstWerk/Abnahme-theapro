@@ -8,19 +8,29 @@ import type {
   Niederschrift,
   ParseWarning,
   Schweregrad,
+  SubSection,
   Teilnehmer,
+  Top,
   Unterschrift,
   Verjaehrungsfrist,
 } from "../types/agenda";
 import {
+  DEFAULT_ITEM_TEXT,
+  DEFAULT_SECTION_TITEL,
+  DEFAULT_TOP_TITEL,
   createEmptyAgenda,
   createEmptyFeststellung,
+  createEmptyItem,
+  createEmptySubSection,
+  createEmptyTop,
   createEmptyUnterschrift,
   createEmptyVerjaehrungsfrist,
+  formatSectionHeading,
+  formatTopHeading,
 } from "../types/agenda";
 import { parseAgenda } from "../markdown/parseAgenda";
 import { serializeAgenda } from "../markdown/serializeAgenda";
-import { backupCurrent, loadPersisted, scheduleSave } from "./persistence";
+import { backupCurrent, loadPersisted, loadPrefs, savePrefs, scheduleSave } from "./persistence";
 import type { ItemFilter } from "./selectors";
 import vorlageGoettingen from "../templates/vorlage-goettingen.md?raw";
 
@@ -67,15 +77,85 @@ function updateItemInDoc(doc: AgendaDocument, uid: string, fn: (item: ChecklistI
   return { ...doc, tops: newTops };
 }
 
+function moveInArray<T>(arr: T[], index: number, delta: number): T[] {
+  const target = index + delta;
+  if (index < 0 || target < 0 || target >= arr.length) return arr;
+  const next = [...arr];
+  [next[index], next[target]] = [next[target], next[index]];
+  return next;
+}
+
+/** Ersetzt genau ein TOP per uid, immutabel mit struktureller Teilung (unbeteiligte
+ * TOPs behalten ihre Objektreferenz, damit React.memo sie nicht neu rendert). */
+function withTop(doc: AgendaDocument, topUid: string, fn: (top: Top) => Top): AgendaDocument {
+  let changed = false;
+  const newTops = doc.tops.map((top) => {
+    if (top.uid !== topUid) return top;
+    const next = fn(top);
+    if (next !== top) changed = true;
+    return next;
+  });
+  if (!changed) return doc;
+  return { ...doc, tops: newTops };
+}
+
+function withSection(
+  doc: AgendaDocument,
+  topUid: string,
+  sectionUid: string,
+  fn: (sec: SubSection) => SubSection,
+): AgendaDocument {
+  return withTop(doc, topUid, (top) => {
+    let changed = false;
+    const newSections = top.sections.map((sec) => {
+      if (sec.uid !== sectionUid) return sec;
+      const next = fn(sec);
+      if (next !== sec) changed = true;
+      return next;
+    });
+    return changed ? { ...top, sections: newSections } : top;
+  });
+}
+
+/** sectionUid === null -> Items direkt am TOP; sonst Items des jeweiligen Abschnitts. */
+function withItems(
+  doc: AgendaDocument,
+  topUid: string,
+  sectionUid: string | null,
+  fn: (items: ChecklistItem[]) => ChecklistItem[],
+): AgendaDocument {
+  if (sectionUid === null) {
+    return withTop(doc, topUid, (top) => {
+      const newItems = fn(top.items);
+      return newItems !== top.items ? { ...top, items: newItems } : top;
+    });
+  }
+  return withSection(doc, topUid, sectionUid, (sec) => {
+    const newItems = fn(sec.items);
+    return newItems !== sec.items ? { ...sec, items: newItems } : sec;
+  });
+}
+
 export type VerjaehrungListe = "verjaehrung" | "verjaehrungWartung";
 type NiederschriftScalarField = "ergebnis" | "maengelbeseitigungFrist" | "fristAngemessen" | "termintreue" | "sonstiges" | "wartungsvertragNr";
+
+interface UiState {
+  collapsedTops: Set<string>;
+  filter: ItemFilter;
+  /** Transient, nie persistiert – Bearbeitungsmodus ist nach jedem Laden der App aus. */
+  editMode: boolean;
+  /** Transient – uid eines frisch angelegten TOP/Abschnitts/Punkts, der einmalig automatisch fokussiert werden soll. */
+  focusUid: string | null;
+}
 
 interface AgendaState {
   doc: AgendaDocument;
   lastSavedAt: string | null;
   dirtySinceExport: boolean;
   importWarnings: ParseWarning[];
-  ui: { collapsedTops: Set<string>; filter: ItemFilter };
+  ui: UiState;
+  /** Dauerhafte, session-übergreifende App-Einstellung (siehe state/persistence.ts). */
+  prefs: { skipDeleteConfirm: boolean };
 
   setItemStatus: (uid: string, status: ItemStatus) => void;
   setItemKommentar: (uid: string, text: string) => void;
@@ -105,6 +185,25 @@ interface AgendaState {
   updateFeststellung: (uid: string, patch: Partial<Omit<Feststellung, "uid">>) => void;
   removeFeststellung: (uid: string) => void;
 
+  setEditMode: (on: boolean) => void;
+  clearFocus: (uid: string) => void;
+  setSkipDeleteConfirm: (value: boolean) => void;
+
+  addTop: () => void;
+  removeTop: (topUid: string) => void;
+  moveTop: (topUid: string, delta: -1 | 1) => void;
+  updateTop: (topUid: string, patch: { nummer?: string; titel?: string }) => void;
+
+  addSection: (topUid: string) => void;
+  removeSection: (topUid: string, sectionUid: string) => void;
+  moveSection: (topUid: string, sectionUid: string, delta: -1 | 1) => void;
+  updateSection: (topUid: string, sectionUid: string, patch: { nummer?: string; titel?: string }) => void;
+
+  addItem: (topUid: string, sectionUid: string | null) => void;
+  removeItem: (topUid: string, sectionUid: string | null, itemUid: string) => void;
+  moveItem: (topUid: string, sectionUid: string | null, itemUid: string, delta: -1 | 1) => void;
+  setItemText: (uid: string, text: string) => void;
+
   toggleTopCollapsed: (uid: string) => void;
   setFilter: (filter: ItemFilter) => void;
 
@@ -115,7 +214,7 @@ interface AgendaState {
   dismissImportWarnings: () => void;
 }
 
-function persistedStateFor(doc: AgendaDocument, ui: { collapsedTops: Set<string>; filter: ItemFilter }) {
+function persistedStateFor(doc: AgendaDocument, ui: UiState) {
   return {
     schemaVersion: 1 as const,
     savedAt: new Date().toISOString(),
@@ -124,20 +223,25 @@ function persistedStateFor(doc: AgendaDocument, ui: { collapsedTops: Set<string>
   };
 }
 
-function initialDocument(): { doc: AgendaDocument; ui: { collapsedTops: Set<string>; filter: ItemFilter } } {
+function initialDocument(): { doc: AgendaDocument; ui: UiState } {
   const persisted = loadPersisted();
   if (persisted?.markdown) {
     try {
       const doc = parseAgenda(persisted.markdown);
       return {
         doc,
-        ui: { collapsedTops: new Set(persisted.ui?.collapsedTops ?? []), filter: (persisted.ui?.filter as ItemFilter) ?? "alle" },
+        ui: {
+          collapsedTops: new Set(persisted.ui?.collapsedTops ?? []),
+          filter: (persisted.ui?.filter as ItemFilter) ?? "alle",
+          editMode: false,
+          focusUid: null,
+        },
       };
     } catch {
       // fällt durch auf Vorlage
     }
   }
-  return { doc: parseAgenda(vorlageGoettingen), ui: { collapsedTops: new Set(), filter: "alle" } };
+  return { doc: parseAgenda(vorlageGoettingen), ui: { collapsedTops: new Set(), filter: "alle", editMode: false, focusUid: null } };
 }
 
 export const useAgendaStore = create<AgendaState>((set, get) => {
@@ -154,6 +258,7 @@ export const useAgendaStore = create<AgendaState>((set, get) => {
     dirtySinceExport: false,
     importWarnings: initialDoc.warnings,
     ui: initialUi,
+    prefs: loadPrefs(),
 
     setItemStatus: (uid, status) =>
       set((state) => {
@@ -343,6 +448,149 @@ export const useAgendaStore = create<AgendaState>((set, get) => {
         return { doc, dirtySinceExport: true };
       }),
 
+    setEditMode: (on) =>
+      set((state) => {
+        const ui: UiState = { ...state.ui, editMode: on, focusUid: null, filter: on ? "alle" : state.ui.filter };
+        scheduleSave(persistedStateFor(state.doc, ui));
+        return { ui };
+      }),
+
+    clearFocus: (uid) =>
+      set((state) => (state.ui.focusUid === uid ? { ui: { ...state.ui, focusUid: null } } : {})),
+
+    setSkipDeleteConfirm: (value) =>
+      set(() => {
+        savePrefs({ skipDeleteConfirm: value });
+        return { prefs: { skipDeleteConfirm: value } };
+      }),
+
+    addTop: () =>
+      set((state) => {
+        const top = createEmptyTop(String(state.doc.tops.length + 1));
+        const doc = { ...state.doc, tops: [...state.doc.tops, top] };
+        afterChange(doc);
+        return { doc, dirtySinceExport: true, ui: { ...state.ui, focusUid: top.uid } };
+      }),
+
+    removeTop: (topUid) =>
+      set((state) => {
+        const doc = { ...state.doc, tops: state.doc.tops.filter((t) => t.uid !== topUid) };
+        afterChange(doc);
+        const collapsedTops = new Set(state.ui.collapsedTops);
+        collapsedTops.delete(topUid);
+        return { doc, dirtySinceExport: true, ui: { ...state.ui, collapsedTops } };
+      }),
+
+    moveTop: (topUid, delta) =>
+      set((state) => {
+        const index = state.doc.tops.findIndex((t) => t.uid === topUid);
+        if (index === -1) return {};
+        const tops = moveInArray(state.doc.tops, index, delta);
+        if (tops === state.doc.tops) return {};
+        const doc = { ...state.doc, tops };
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    updateTop: (topUid, patch) =>
+      set((state) => {
+        const doc = withTop(state.doc, topUid, (top) => {
+          const nummer = patch.nummer !== undefined ? (patch.nummer.trim() === "" ? null : patch.nummer.trim()) : top.nummer;
+          const titel = patch.titel !== undefined ? (patch.titel.trim() === "" ? DEFAULT_TOP_TITEL : patch.titel.trim()) : top.titel;
+          return { ...top, nummer, titel, rawHeading: formatTopHeading(nummer, titel) };
+        });
+        if (doc === state.doc) return {};
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    addSection: (topUid) =>
+      set((state) => {
+        const top = state.doc.tops.find((t) => t.uid === topUid);
+        if (!top) return {};
+        const nummer = top.nummer != null ? `${top.nummer}.${top.sections.length + 1}` : String(top.sections.length + 1);
+        const newSection = createEmptySubSection(nummer);
+        const doc = withTop(state.doc, topUid, (t) => ({ ...t, sections: [...t.sections, newSection] }));
+        afterChange(doc);
+        const collapsedTops = new Set(state.ui.collapsedTops);
+        collapsedTops.delete(topUid);
+        return { doc, dirtySinceExport: true, ui: { ...state.ui, focusUid: newSection.uid, collapsedTops } };
+      }),
+
+    removeSection: (topUid, sectionUid) =>
+      set((state) => {
+        const doc = withTop(state.doc, topUid, (top) => ({
+          ...top,
+          sections: top.sections.filter((s) => s.uid !== sectionUid),
+        }));
+        if (doc === state.doc) return {};
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    moveSection: (topUid, sectionUid, delta) =>
+      set((state) => {
+        const doc = withTop(state.doc, topUid, (top) => {
+          const index = top.sections.findIndex((s) => s.uid === sectionUid);
+          if (index === -1) return top;
+          const sections = moveInArray(top.sections, index, delta);
+          return sections === top.sections ? top : { ...top, sections };
+        });
+        if (doc === state.doc) return {};
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    updateSection: (topUid, sectionUid, patch) =>
+      set((state) => {
+        const doc = withSection(state.doc, topUid, sectionUid, (sec) => {
+          const nummer = patch.nummer !== undefined ? (patch.nummer.trim() === "" ? null : patch.nummer.trim()) : sec.nummer;
+          const titel = patch.titel !== undefined ? (patch.titel.trim() === "" ? DEFAULT_SECTION_TITEL : patch.titel.trim()) : sec.titel;
+          return { ...sec, nummer, titel, rawHeading: formatSectionHeading(nummer, titel) };
+        });
+        if (doc === state.doc) return {};
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    addItem: (topUid, sectionUid) =>
+      set((state) => {
+        const item = createEmptyItem(DEFAULT_ITEM_TEXT);
+        const doc = withItems(state.doc, topUid, sectionUid, (items) => [...items, item]);
+        if (doc === state.doc) return {};
+        afterChange(doc);
+        const collapsedTops = new Set(state.ui.collapsedTops);
+        collapsedTops.delete(topUid);
+        return { doc, dirtySinceExport: true, ui: { ...state.ui, focusUid: item.uid, collapsedTops } };
+      }),
+
+    removeItem: (topUid, sectionUid, itemUid) =>
+      set((state) => {
+        const doc = withItems(state.doc, topUid, sectionUid, (items) => items.filter((i) => i.uid !== itemUid));
+        if (doc === state.doc) return {};
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    moveItem: (topUid, sectionUid, itemUid, delta) =>
+      set((state) => {
+        const doc = withItems(state.doc, topUid, sectionUid, (items) => {
+          const index = items.findIndex((i) => i.uid === itemUid);
+          if (index === -1) return items;
+          return moveInArray(items, index, delta);
+        });
+        if (doc === state.doc) return {};
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    setItemText: (uid, text) =>
+      set((state) => {
+        const doc = updateItemInDoc(state.doc, uid, (item) => ({ ...item, text: text.trim() === "" ? DEFAULT_ITEM_TEXT : text }));
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
     toggleTopCollapsed: (uid) =>
       set((state) => {
         const collapsedTops = new Set(state.ui.collapsedTops);
@@ -363,9 +611,14 @@ export const useAgendaStore = create<AgendaState>((set, get) => {
     loadFromMarkdown: (raw) => {
       backupCurrent();
       const doc = parseAgenda(raw);
-      set(() => {
+      set((state) => {
         afterChange(doc);
-        return { doc, dirtySinceExport: false, importWarnings: doc.warnings, ui: { collapsedTops: new Set(), filter: "alle" } };
+        return {
+          doc,
+          dirtySinceExport: false,
+          importWarnings: doc.warnings,
+          ui: { collapsedTops: new Set(), filter: "alle", editMode: state.ui.editMode, focusUid: null },
+        };
       });
       return doc.warnings;
     },
@@ -373,18 +626,28 @@ export const useAgendaStore = create<AgendaState>((set, get) => {
     loadTemplate: () => {
       backupCurrent();
       const doc = parseAgenda(vorlageGoettingen);
-      set(() => {
+      set((state) => {
         afterChange(doc);
-        return { doc, dirtySinceExport: false, importWarnings: [], ui: { collapsedTops: new Set(), filter: "alle" } };
+        return {
+          doc,
+          dirtySinceExport: false,
+          importWarnings: [],
+          ui: { collapsedTops: new Set(), filter: "alle", editMode: state.ui.editMode, focusUid: null },
+        };
       });
     },
 
     reset: () => {
       backupCurrent();
       const doc = createEmptyAgenda();
-      set(() => {
+      set((state) => {
         afterChange(doc);
-        return { doc, dirtySinceExport: false, importWarnings: [], ui: { collapsedTops: new Set(), filter: "alle" } };
+        return {
+          doc,
+          dirtySinceExport: false,
+          importWarnings: [],
+          ui: { collapsedTops: new Set(), filter: "alle", editMode: state.ui.editMode, focusUid: null },
+        };
       });
     },
 

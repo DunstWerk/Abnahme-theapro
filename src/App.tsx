@@ -23,6 +23,9 @@ export default function App() {
   const setHinweis = useAgendaStore((s) => s.setHinweis);
   const setSchlussHinweis = useAgendaStore((s) => s.setSchlussHinweis);
   const setNiederschriftField = useAgendaStore((s) => s.setNiederschriftField);
+  const editMode = useAgendaStore((s) => s.ui.editMode);
+  const setEditMode = useAgendaStore((s) => s.setEditMode);
+  const addTop = useAgendaStore((s) => s.addTop);
 
   useEffect(() => registerFlushOnUnload(), []);
 
@@ -39,6 +42,14 @@ export default function App() {
   return (
     <div className={styles.app}>
       <Toolbar />
+      {editMode && (
+        <div className={styles.editModeBanner}>
+          <span>Bearbeitungsmodus aktiv – die Agenda-Struktur kann geändert werden.</span>
+          <button type="button" className={styles.editModeBannerButton} onClick={() => setEditMode(false)}>
+            Beenden
+          </button>
+        </div>
+      )}
       <div className={styles.body}>
         <TopNav />
         <main className={styles.main}>
@@ -47,9 +58,16 @@ export default function App() {
           <TeilnehmerTable />
           <HinweisBlock label="Hinweis" value={doc.hinweis} onChange={setHinweis} />
           <MaengelPanel />
-          {doc.tops.map((top) => (
-            <TopSection key={top.uid} top={top} />
+          {doc.tops.map((top, i) => (
+            <TopSection key={top.uid} top={top} index={i} total={doc.tops.length} />
           ))}
+          {editMode && (
+            <div className={formStyles.panel}>
+              <button type="button" className={formStyles.addButton} onClick={addTop}>
+                + Neues TOP
+              </button>
+            </div>
+          )}
           <HinweisBlock label="Schlusshinweis" value={doc.schlussHinweis} onChange={setSchlussHinweis} />
 
           <AbnahmeErgebnisForm />
