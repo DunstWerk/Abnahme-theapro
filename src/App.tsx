@@ -1,6 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAgendaStore } from "./state/agendaStore";
 import { registerFlushOnUnload } from "./state/persistence";
+import { isUnlocked } from "./auth/passwordGate";
+import PasswordGate from "./components/PasswordGate";
 import Toolbar from "./components/Toolbar";
 import TopNav from "./components/TopNav";
 import HeaderForm from "./components/HeaderForm";
@@ -18,6 +20,7 @@ import formStyles from "./components/forms.module.css";
 import styles from "./components/layout.module.css";
 
 export default function App() {
+  const [unlocked, setUnlocked] = useState(() => isUnlocked());
   const doc = useAgendaStore((s) => s.doc);
   const dirtySinceExport = useAgendaStore((s) => s.dirtySinceExport);
   const setHinweis = useAgendaStore((s) => s.setHinweis);
@@ -38,6 +41,10 @@ export default function App() {
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirtySinceExport]);
+
+  if (!unlocked) {
+    return <PasswordGate onUnlock={() => setUnlocked(true)} />;
+  }
 
   return (
     <div className={styles.app}>
