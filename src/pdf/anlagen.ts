@@ -19,10 +19,11 @@ function padRows(body: Content[][], minRows: number): Content[][] {
   return padded;
 }
 
-/** "Anlage N zur Abnahmeniederschrift" + Untertitel, mit Seitenumbruch davor. */
-export function buildAnlageTitle(nr: number, untertitel: string): Content[] {
+/** "Anlage N zur Abnahmeniederschrift"/"...Übernahmeniederschrift" + Untertitel, mit Seitenumbruch davor. */
+export function buildAnlageTitle(nr: number, untertitel: string, oenorm = false): Content[] {
+  const wort = oenorm ? "Übernahmeniederschrift" : "Abnahmeniederschrift";
   return [
-    { text: `Anlage ${nr} zur Abnahmeniederschrift`, style: "anlageTitle", pageBreak: "before", margin: [0, 0, 0, 2] },
+    { text: `Anlage ${nr} zur ${wort}`, style: "anlageTitle", pageBreak: "before", margin: [0, 0, 0, 2] },
     { text: untertitel, style: "subHeading", margin: [0, 0, 0, 10] },
   ];
 }
@@ -49,9 +50,11 @@ export function buildAnlage1(doc: AgendaDocument): Content[] {
     }),
   ];
   return [
-    ...buildAnlageTitle(1, "Mängelliste"),
+    ...buildAnlageTitle(1, "Mängelliste", doc.oenorm),
     {
-      text: 'Die Einstufung in "wesentlich" und "unwesentlich" richtet sich nach § 12 Abs. 3 VOB/B.',
+      text: doc.oenorm
+        ? 'Die Einstufung in "wesentlich" und "unwesentlich" richtet sich nach den Bestimmungen der ÖNORM B 2110.'
+        : 'Die Einstufung in "wesentlich" und "unwesentlich" richtet sich nach § 12 Abs. 3 VOB/B.',
       style: "itemComment",
       margin: [0, 0, 0, 6],
     },
@@ -73,7 +76,7 @@ export function buildAnlage2(doc: AgendaDocument): Content[] {
     ]),
   ];
   return [
-    ...buildAnlageTitle(2, "Feststellungen und Festlegungen"),
+    ...buildAnlageTitle(2, "Feststellungen und Festlegungen", doc.oenorm),
     {
       table: { headerRows: 1, widths: [42, 110, "*", 100], body: padRows(body, MIN_ROWS), dontBreakRows: true },
       layout: dataTableLayout,

@@ -8,6 +8,7 @@ import {
   FESTSTELLUNG_SEP_ROW,
   FORMAT_ID,
   HEADER_FIELD_ORDER,
+  RECHTSGRUNDLAGE_LABEL,
   STATUS_LABEL,
   STATUS_TO_CHECKBOX,
   TEILNEHMER_HEADER_ROW,
@@ -60,6 +61,7 @@ function serializeRahmendaten(doc: AgendaDocument): string[] {
   for (const entry of HEADER_FIELD_ORDER) {
     lines.push(`- **${entry.label}:** ${doc.header[entry.field]}`);
   }
+  lines.push(`- **${RECHTSGRUNDLAGE_LABEL}:** ${doc.oenorm ? "ja" : "nein"}`);
   for (const [label, value] of Object.entries(doc.header.weitere)) {
     lines.push(`- **${label}:** ${value}`);
   }

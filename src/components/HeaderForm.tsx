@@ -20,8 +20,10 @@ const FIELD_ORDER: (keyof Omit<AgendaHeader, "weitere">)[] = [
 export default function HeaderForm() {
   const titel = useAgendaStore((s) => s.doc.titel);
   const header = useAgendaStore((s) => s.doc.header);
+  const oenorm = useAgendaStore((s) => s.doc.oenorm);
   const setTitel = useAgendaStore((s) => s.setTitel);
   const setHeaderField = useAgendaStore((s) => s.setHeaderField);
+  const setOenorm = useAgendaStore((s) => s.setOenorm);
 
   return (
     <div className={styles.panel}>
@@ -32,6 +34,11 @@ export default function HeaderForm() {
         aria-label="Dokumenttitel"
       />
       <div style={{ height: 12 }} />
+      <label className={styles.radioRow}>
+        <input type="checkbox" checked={oenorm} onChange={(e) => setOenorm(e.target.checked)} />
+        Abnahme nach ÖNORM (Österreich)
+      </label>
+      <div style={{ height: 8 }} />
       <div className={styles.grid}>
         {FIELD_ORDER.map((field) => (
           <label key={field} className={styles.field}>

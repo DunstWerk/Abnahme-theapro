@@ -200,6 +200,35 @@ describe("serializeAgenda / parseAgenda round-trip", () => {
   });
 });
 
+describe("ÖNORM-Rechtsgrundlage (oenorm)", () => {
+  it("Default false wird als 'nein' serialisiert und bleibt beim Round-Trip false", () => {
+    const doc = buildSampleDoc();
+    expect(doc.oenorm).toBe(false);
+    const md = serializeAgenda(doc, { now: FIXED_NOW });
+    expect(md).toContain("- **Rechtsgrundlage ÖNORM:** nein");
+    const parsed = parseAgenda(md);
+    expect(parsed.oenorm).toBe(false);
+    expect(parsed.warnings.filter((w) => w.severity === "warn")).toEqual([]);
+  });
+
+  it("oenorm: true wird als 'ja' serialisiert und bleibt beim Round-Trip true", () => {
+    const doc = buildSampleDoc();
+    doc.oenorm = true;
+    const md = serializeAgenda(doc, { now: FIXED_NOW });
+    expect(md).toContain("- **Rechtsgrundlage ÖNORM:** ja");
+    const parsed = parseAgenda(md);
+    expect(parsed.oenorm).toBe(true);
+    expect(parsed.warnings.filter((w) => w.severity === "warn")).toEqual([]);
+  });
+
+  it("alte .md-Dateien ohne die Rechtsgrundlage-Zeile werden klaglos als oenorm:false gelesen", () => {
+    const raw = "# Titel\n\n## TOP 1 – Test\n\n- [ ] Punkt\n";
+    const doc = parseAgenda(raw);
+    expect(doc.oenorm).toBe(false);
+    expect(doc.warnings.filter((w) => w.severity === "warn")).toEqual([]);
+  });
+});
+
 describe("parseAgenda Toleranz gegenüber Hand-Edits", () => {
   it("akzeptiert CRLF-Zeilenenden und BOM", () => {
     const raw = "﻿# Titel\r\n\r\n## TOP 1 – Test\r\n\r\n- [x] Punkt\r\n";

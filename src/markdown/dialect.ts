@@ -32,6 +32,9 @@ export const META_RE = /^( *)-\s+([^:\n]+):\s*(.*)$/;
 // "- **Projekt:** Wert" – der Doppelpunkt steht INNERHALB der Fett-Markierung.
 export const HEADER_BULLET_RE = /^-\s+\*\*([^*]+?):\*\*\s*(.*)$/;
 
+/** Eigenständige Ja/Nein-Bullet-Zeile in "## Rahmendaten", steuert AgendaDocument.oenorm. */
+export const RECHTSGRUNDLAGE_LABEL = "Rechtsgrundlage ÖNORM";
+
 export const TABLE_ROW_RE = /^\|(.+)\|\s*$/;
 export const TABLE_SEP_RE = /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
 

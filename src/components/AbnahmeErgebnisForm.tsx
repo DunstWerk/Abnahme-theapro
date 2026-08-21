@@ -1,19 +1,12 @@
 import { useMemo } from "react";
 import type { AbnahmeErgebnisArt, Termintreue } from "../types/agenda";
+import { abnahmeWort, ergebnisLabel } from "../types/agenda";
 import { useAgendaStore } from "../state/agendaStore";
 import { countMaengelBySchweregrad, maengelNummernBereich } from "../state/selectors";
 import DebouncedInput from "./DebouncedInput";
 import styles from "./forms.module.css";
 
-const ERGEBNIS_OPTIONS: { value: AbnahmeErgebnisArt | "offen"; label: (bereich: string) => string }[] = [
-  { value: "ohneMaengel", label: () => "ohne Mängel abgenommen." },
-  { value: "nichtAbgenommen", label: () => "nicht abgenommen." },
-  {
-    value: "mitMaengeln",
-    label: (bereich) => `mit den Mängeln Nr. ${bereich || "…"} gemäß Mängelliste (Anlage 1) abgenommen.`,
-  },
-  { value: "offen", label: () => "noch nicht festgelegt." },
-];
+const ERGEBNIS_ARTEN: AbnahmeErgebnisArt[] = ["ohneMaengel", "nichtAbgenommen", "mitMaengeln"];
 
 const TERMINTREUE_OPTIONS: { value: Termintreue | "offen"; label: string }[] = [
   { value: "termingerecht", label: "termingerecht fertiggestellt." },
@@ -34,21 +27,30 @@ export default function AbnahmeErgebnisForm() {
 
   return (
     <div className={styles.panel}>
-      <div className={styles.panelTitle}>Ergebnis der Abnahme</div>
+      <div className={styles.panelTitle}>Ergebnis der {abnahmeWort(doc.oenorm, true)}</div>
 
       <div className={styles.radioGroup}>
         <div style={{ fontSize: "0.85rem", color: "#555", marginBottom: 6 }}>3.1 &nbsp;Die Leistung wurde</div>
-        {ERGEBNIS_OPTIONS.map((opt) => (
-          <label key={opt.value} className={styles.radioRow}>
+        {ERGEBNIS_ARTEN.map((art) => (
+          <label key={art} className={styles.radioRow}>
             <input
               type="radio"
               name="ergebnis"
-              checked={(n.ergebnis ?? "offen") === opt.value}
-              onChange={() => setField("ergebnis", opt.value === "offen" ? null : opt.value)}
+              checked={(n.ergebnis ?? "offen") === art}
+              onChange={() => setField("ergebnis", art)}
             />
-            {opt.label(bereich)}
+            {ergebnisLabel(art, doc.oenorm, bereich)}
           </label>
         ))}
+        <label className={styles.radioRow}>
+          <input
+            type="radio"
+            name="ergebnis"
+            checked={n.ergebnis == null}
+            onChange={() => setField("ergebnis", null)}
+          />
+          noch nicht festgelegt.
+        </label>
         {(counts.wesentlich > 0 || counts.unwesentlich > 0) && (
           <div className={styles.hint}>
             {counts.wesentlich + counts.unwesentlich} Mangel/Mängel erfasst – davon {counts.wesentlich} wesentlich,{" "}

@@ -154,6 +154,10 @@ export interface AgendaDocument {
   niederschrift: Niederschrift;
   /** Anlage 2. */
   feststellungen: Feststellung[];
+  /** Steuert, ob die PDF-Ausgabe sich auf VOB/B (Deutschland, false) oder
+   * ÖNORM B 2110 (Österreich, true) bezieht – Titel, §-Überschriften und
+   * Rechtsgrundlage-Sätze in src/pdf/ werden entsprechend ausgewählt. */
+  oenorm: boolean;
   /** Nur beim Parsen befüllt, nicht Teil des persistenten Modells. */
   warnings: ParseWarning[];
 }
@@ -241,6 +245,7 @@ export function createEmptyAgenda(): AgendaDocument {
     schlussHinweis: "",
     niederschrift: createEmptyNiederschrift(),
     feststellungen: [],
+    oenorm: false,
     warnings: [],
   };
 }
@@ -287,6 +292,23 @@ export function createEmptyTop(nummer: string | null, titel: string = DEFAULT_TO
     sections: [],
     maengelAnchor: false,
   };
+}
+
+/** "Abnahme"/"Übernahme" bzw. "abgenommen"/"übernommen" je nach AgendaDocument.oenorm – zentrale
+ * Stelle, damit PDF-Ausgabe (src/pdf/niederschrift.ts) und Live-Vorschau (AbnahmeErgebnisForm.tsx)
+ * garantiert denselben Wortlaut zeigen. Bewusst hier statt in src/pdf/, damit UI-Komponenten diese
+ * Funktion nutzen können, ohne PDF-Code (inkl. eingebettetem Firmenlogo) in den Hauptbundle zu ziehen. */
+export function abnahmeWort(oenorm: boolean, kapitalisiert = false): string {
+  if (oenorm) return kapitalisiert ? "Übernahme" : "übernommen";
+  return kapitalisiert ? "Abnahme" : "abgenommen";
+}
+
+/** Gemeinsame §3.1-Ergebnistexte, siehe abnahmeWort(). */
+export function ergebnisLabel(art: AbnahmeErgebnisArt, oenorm: boolean, bereich: string): string {
+  const w = abnahmeWort(oenorm);
+  if (art === "ohneMaengel") return `ohne Mängel ${w}.`;
+  if (art === "nichtAbgenommen") return `nicht ${w}.`;
+  return `mit den Mängeln Nr. ${bereich || "___"} gemäß Mängelliste (Anlage 1) ${w}.`;
 }
 
 export function createEmptySubSection(nummer: string | null, titel: string = DEFAULT_SECTION_TITEL): SubSection {

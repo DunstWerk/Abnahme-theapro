@@ -1,5 +1,6 @@
 import type { Content } from "pdfmake";
 import type { AgendaDocument, Verjaehrungsfrist } from "../types/agenda";
+import { abnahmeWort, ergebnisLabel } from "../types/agenda";
 import { formatDateDe } from "../markdown/normalize";
 import { maengelNummernBereich } from "../state/selectors";
 import { pdfColors } from "./pdfStyles";
@@ -26,7 +27,7 @@ function buildMassnahme(doc: AgendaDocument): Content[] {
       { text: "Auftraggeber (AG):", bold: true },
       { stack: [{ text: h.auftraggeber || "–" }, ...(h.auftraggeberAdresse ? [{ text: h.auftraggeberAdresse }] : [])] },
     ],
-    [{ text: "Datum der Abnahme:", bold: true }, { text: formatDateDe(h.datum) || "–" }],
+    [{ text: `Datum der ${abnahmeWort(doc.oenorm, true)}:`, bold: true }, { text: formatDateDe(h.datum) || "–" }],
   ];
   return [
     { text: "1.  Maßnahme", style: "subHeading", margin: [0, 10, 0, 6] },
@@ -37,7 +38,7 @@ function buildMassnahme(doc: AgendaDocument): Content[] {
 function buildTeilnehmerNiederschrift(doc: AgendaDocument): Content[] {
   if (doc.teilnehmer.length === 0) return [];
   return [
-    { text: "2.  Teilnehmer der Abnahme", style: "subHeading", margin: [0, 4, 0, 6] },
+    { text: `2.  Teilnehmer der ${abnahmeWort(doc.oenorm, true)}`, style: "subHeading", margin: [0, 4, 0, 6] },
     {
       table: {
         headerRows: 1,
@@ -72,19 +73,16 @@ function buildErgebnis(doc: AgendaDocument): Content[] {
   const fristText = n.maengelbeseitigungFrist ? formatDateDe(n.maengelbeseitigungFrist) : "________________";
 
   return [
-    { text: "3.  Ergebnis der Abnahme", style: "subHeading", margin: [0, 10, 0, 6] },
+    { text: `3.  Ergebnis der ${abnahmeWort(doc.oenorm, true)}`, style: "subHeading", margin: [0, 10, 0, 6] },
     {
       columns: [
         { width: 95, text: "3.1  Die Leistung wurde" },
         {
           width: "*",
           stack: [
-            ergebnisRow(n.ergebnis === "ohneMaengel", "ohne Mängel abgenommen."),
-            ergebnisRow(n.ergebnis === "nichtAbgenommen", "nicht abgenommen."),
-            ergebnisRow(
-              n.ergebnis === "mitMaengeln",
-              `mit den Mängeln Nr. ${bereich || "___"} gemäß Mängelliste (Anlage 1) abgenommen.`,
-            ),
+            ergebnisRow(n.ergebnis === "ohneMaengel", ergebnisLabel("ohneMaengel", doc.oenorm, bereich)),
+            ergebnisRow(n.ergebnis === "nichtAbgenommen", ergebnisLabel("nichtAbgenommen", doc.oenorm, bereich)),
+            ergebnisRow(n.ergebnis === "mitMaengeln", ergebnisLabel("mitMaengeln", doc.oenorm, bereich)),
           ],
         },
       ],
@@ -135,14 +133,17 @@ function verjaehrungTable(list: Verjaehrungsfrist[]): Content {
 
 function buildVerjaehrung(doc: AgendaDocument): Content[] {
   const n = doc.niederschrift;
+  const fristWort = doc.oenorm ? "Gewährleistungsfristen" : "Verjährungsfristen für Mängelansprüche";
+  const ueberschrift = doc.oenorm ? "4.  Gewährleistungsfrist" : "4.  Verjährungsfrist für Mängelansprüche";
+  const rechtsgrundlageSatz = doc.oenorm
+    ? `4.1  Gemäß ÖNORM B 2110 und vertraglicher Vereinbarungen gelten folgende ${fristWort}:`
+    : `4.1  Gemäß VOB/B § 13 und vertraglicher Vereinbarungen gelten folgende ${fristWort} (früher: Gewährleistung):`;
   return [
-    { text: "4.  Verjährungsfrist für Mängelansprüche", style: "subHeading", margin: [0, 10, 0, 6] },
-    {
-      text: "4.1  Gemäß VOB/B § 13 und vertraglicher Vereinbarungen gelten folgende Verjährungsfristen für Mängelansprüche (früher: Gewährleistung):",
-    },
+    { text: ueberschrift, style: "subHeading", margin: [0, 10, 0, 6] },
+    { text: rechtsgrundlageSatz },
     verjaehrungTable(n.verjaehrung),
     {
-      text: `4.2  Für die Nr. ${n.wartungsvertragNr || "___"} aus der vorstehenden Aufstellung gelten bei Abschluss eines Wartungsvertrages folgende geänderte Verjährungsfristen für Mängelansprüche:`,
+      text: `4.2  Für die Nr. ${n.wartungsvertragNr || "___"} aus der vorstehenden Aufstellung gelten bei Abschluss eines Wartungsvertrages folgende geänderte ${fristWort}:`,
     },
     verjaehrungTable(n.verjaehrungWartung),
   ];
@@ -192,7 +193,11 @@ function buildUnterschriften(doc: AgendaDocument): Content[] {
 export function buildNiederschrift(doc: AgendaDocument, now: Date): Content[] {
   return [
     buildLetterhead(doc, now),
-    { text: "Niederschrift - Abnahme nach VOB/B § 12", style: "docTitle", margin: [0, 4, 0, 10] },
+    {
+      text: doc.oenorm ? "Niederschrift – Übernahme nach ÖNORM B 2110" : "Niederschrift - Abnahme nach VOB/B § 12",
+      style: "docTitle",
+      margin: [0, 4, 0, 10],
+    },
     ...buildMassnahme(doc),
     ...buildTeilnehmerNiederschrift(doc),
     ...buildErgebnis(doc),

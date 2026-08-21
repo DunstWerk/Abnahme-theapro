@@ -28,6 +28,7 @@ exported: 2026-09-03T11:42:00Z
 - **Datum:** 2026-09-03
 - **Uhrzeit:** 09:00
 - **Ort:** ...
+- **Rechtsgrundlage ÖNORM:** nein
 
 ## Teilnehmer
 
@@ -190,6 +191,12 @@ PDF-Code hinterlegt und **nicht** Teil dieser Markdown-Datei – nur die
 folgenden, von Termin zu Termin unterschiedlichen Inhalte werden hier
 gespeichert:
 
+- **`Rechtsgrundlage ÖNORM`** (in `## Rahmendaten`): `ja` oder `nein`.
+  Steuert, ob sich das PDF auf VOB/B (Deutschland) oder auf ÖNORM B 2110
+  (Österreich) bezieht – bei `ja` heißt es im Dokument durchgängig
+  "Übernahme" statt "Abnahme", u. a. in Titel, Anlagen-Titeln und den
+  §-Überschriften/-Sätzen. In der App per Checkbox oben in den
+  Projektdaten umschaltbar.
 - **`## Abnahmeergebnis`** (§3): `Ergebnis` ist `ohne Mängel`,
   `nicht abgenommen` oder `mit Mängeln`; `Frist angemessen` ist `ja`
   oder `nein`; `Fertigstellung` ist `termingerecht` oder

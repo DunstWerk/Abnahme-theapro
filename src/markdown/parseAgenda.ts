@@ -28,6 +28,7 @@ import {
   isReservedSection,
   matchErgebnisLabel,
   matchHeaderLabel,
+  RECHTSGRUNDLAGE_LABEL,
   splitTableRow,
 } from "./dialect";
 import {
@@ -173,6 +174,10 @@ function parseRahmendaten(lines: Line[], doc: AgendaDocument, warnings: ParseWar
     }
     const label = m[1].trim();
     const value = m[2].trim();
+    if (label.toLowerCase() === RECHTSGRUNDLAGE_LABEL.toLowerCase()) {
+      doc.oenorm = normalizeJaNein(value);
+      continue;
+    }
     const field = matchHeaderLabel(label);
     if (field) {
       doc.header[field] = value;

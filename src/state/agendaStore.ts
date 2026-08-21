@@ -166,6 +166,7 @@ interface AgendaState {
   setHinweis: (text: string) => void;
   setSchlussHinweis: (text: string) => void;
   setTitel: (text: string) => void;
+  setOenorm: (value: boolean) => void;
 
   addTeilnehmer: () => void;
   updateTeilnehmer: (uid: string, patch: Partial<Omit<Teilnehmer, "uid">>) => void;
@@ -312,6 +313,13 @@ export const useAgendaStore = create<AgendaState>((set, get) => {
     setTitel: (text) =>
       set((state) => {
         const doc = { ...state.doc, titel: text };
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    setOenorm: (value) =>
+      set((state) => {
+        const doc = { ...state.doc, oenorm: value };
         afterChange(doc);
         return { doc, dirtySinceExport: true };
       }),

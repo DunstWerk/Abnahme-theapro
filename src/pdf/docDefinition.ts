@@ -148,8 +148,9 @@ function buildSignatureBlock(doc: AgendaDocument): Content {
 
 /** Anlage 3 = das ursprüngliche Checklisten-Protokoll (TOP für TOP), unverändert bis auf den Anlage-Titel. */
 function buildAnlage3(doc: AgendaDocument): Content[] {
+  const begehungTitel = doc.oenorm ? "Protokoll der Übernahmebegehung (Checkliste)" : "Protokoll der Abnahmebegehung (Checkliste)";
   return [
-    ...buildAnlageTitle(3, "Protokoll der Abnahmebegehung (Checkliste)"),
+    ...buildAnlageTitle(3, begehungTitel, doc.oenorm),
     { text: doc.titel, style: "docTitle" },
     {
       canvas: [{ type: "line", x1: 0, y1: 0, x2: 495, y2: 0, lineWidth: 2, lineColor: pdfColors.coral }],
@@ -187,14 +188,14 @@ export function buildDocDefinition(doc: AgendaDocument, options: BuildDocDefinit
     pageSize: "A4",
     pageMargins: pdfTokens.pageMargins,
     info: {
-      title: `Niederschrift Abnahme – ${doc.header.projekt || doc.titel}`,
-      subject: "Niederschrift – Abnahme nach VOB/B § 12",
+      title: `Niederschrift ${doc.oenorm ? "Übernahme" : "Abnahme"} – ${doc.header.projekt || doc.titel}`,
+      subject: doc.oenorm ? "Niederschrift – Übernahme nach ÖNORM B 2110" : "Niederschrift – Abnahme nach VOB/B § 12",
     },
     header: (currentPage) =>
       currentPage > 1
         ? {
             columns: [
-              { text: "Abnahme", style: "headerText" },
+              { text: doc.oenorm ? "Übernahme" : "Abnahme", style: "headerText" },
               buildWordmark(65),
             ],
             margin: [50, 22, 50, 0] as [number, number, number, number],
