@@ -5,6 +5,7 @@ import ChecklistItemRow from "./ChecklistItemRow";
 import DebouncedInput from "./DebouncedInput";
 import EditControls from "./EditControls";
 import ConfirmDialog from "./ConfirmDialog";
+import { useDragReorder, dragPropsFor, dragRowClass, type RowDragProps } from "./useDragReorder";
 import styles from "./checklist.module.css";
 
 interface Props {
@@ -12,9 +13,10 @@ interface Props {
   topUid: string;
   index: number;
   total: number;
+  dragProps?: RowDragProps;
 }
 
-function SubSection({ section, topUid, index, total }: Props) {
+function SubSection({ section, topUid, index, total, dragProps }: Props) {
   const editMode = useAgendaStore((s) => s.ui.editMode);
   const isFocusTarget = useAgendaStore((s) => s.ui.focusUid === section.uid);
   const clearFocus = useAgendaStore((s) => s.clearFocus);
@@ -22,9 +24,12 @@ function SubSection({ section, topUid, index, total }: Props) {
   const moveSection = useAgendaStore((s) => s.moveSection);
   const removeSection = useAgendaStore((s) => s.removeSection);
   const addItem = useAgendaStore((s) => s.addItem);
+  const reorderItem = useAgendaStore((s) => s.reorderItem);
   const skipDeleteConfirm = useAgendaStore((s) => s.prefs.skipDeleteConfirm);
   const setSkipDeleteConfirm = useAgendaStore((s) => s.setSkipDeleteConfirm);
   const [confirming, setConfirming] = useState(false);
+
+  const itemDrag = useDragReorder(section.items, (uid, targetIndex) => reorderItem(topUid, section.uid, uid, targetIndex));
 
   const heading = section.nummer != null ? `${section.nummer} ${section.titel}` : section.titel;
 
@@ -34,7 +39,7 @@ function SubSection({ section, topUid, index, total }: Props) {
   }
 
   return (
-    <div className={styles.subSection}>
+    <div className={`${styles.subSection} ${dragRowClass(styles, dragProps)}`.trim()} {...(dragProps?.rowProps ?? {})}>
       {editMode ? (
         <div className={styles.subSectionTitleEdit}>
           <DebouncedInput
@@ -61,6 +66,7 @@ function SubSection({ section, topUid, index, total }: Props) {
             onMoveDown={() => moveSection(topUid, section.uid, 1)}
             onDelete={requestDelete}
             ariaSubject={`Abschnitt "${heading}"`}
+            dragHandleProps={dragProps?.handleProps}
           />
         </div>
       ) : (
@@ -78,6 +84,7 @@ function SubSection({ section, topUid, index, total }: Props) {
           parentSectionUid={section.uid}
           index={i}
           total={section.items.length}
+          dragProps={editMode ? dragPropsFor(itemDrag, item.uid) : undefined}
         />
       ))}
       {editMode && (

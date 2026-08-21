@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useAgendaStore } from "./state/agendaStore";
+import { useDragReorder, dragPropsFor } from "./components/useDragReorder";
 import { registerFlushOnUnload } from "./state/persistence";
 import { isUnlocked } from "./auth/passwordGate";
 import PasswordGate from "./components/PasswordGate";
@@ -18,6 +19,7 @@ import FeststellungenPanel from "./components/FeststellungenPanel";
 import DebouncedInput from "./components/DebouncedInput";
 import formStyles from "./components/forms.module.css";
 import styles from "./components/layout.module.css";
+import checklistStyles from "./components/checklist.module.css";
 
 export default function App() {
   const [unlocked, setUnlocked] = useState(() => isUnlocked());
@@ -29,6 +31,8 @@ export default function App() {
   const editMode = useAgendaStore((s) => s.ui.editMode);
   const setEditMode = useAgendaStore((s) => s.setEditMode);
   const addTop = useAgendaStore((s) => s.addTop);
+  const reorderTop = useAgendaStore((s) => s.reorderTop);
+  const topDrag = useDragReorder(doc.tops, reorderTop);
 
   useEffect(() => registerFlushOnUnload(), []);
 
@@ -66,11 +70,30 @@ export default function App() {
           <HinweisBlock label="Hinweis" value={doc.hinweis} onChange={setHinweis} />
           <MaengelPanel />
           {doc.tops.map((top, i) => (
-            <TopSection key={top.uid} top={top} index={i} total={doc.tops.length} />
+            <Fragment key={top.uid}>
+              {editMode && (
+                <div className={checklistStyles.insertTopRow}>
+                  <button
+                    type="button"
+                    className={checklistStyles.insertTopButton}
+                    onClick={() => addTop(top.uid)}
+                    aria-label={`Neues TOP vor "${top.titel}" einfügen`}
+                  >
+                    + TOP einfügen
+                  </button>
+                </div>
+              )}
+              <TopSection
+                top={top}
+                index={i}
+                total={doc.tops.length}
+                dragProps={editMode ? dragPropsFor(topDrag, top.uid) : undefined}
+              />
+            </Fragment>
           ))}
           {editMode && (
             <div className={formStyles.panel}>
-              <button type="button" className={formStyles.addButton} onClick={addTop}>
+              <button type="button" className={formStyles.addButton} onClick={() => addTop()}>
                 + Neues TOP
               </button>
             </div>

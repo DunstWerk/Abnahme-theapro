@@ -7,6 +7,7 @@ import MangelDetails from "./MangelDetails";
 import DebouncedInput from "./DebouncedInput";
 import EditControls from "./EditControls";
 import ConfirmDialog from "./ConfirmDialog";
+import { dragRowClass, type RowDragProps } from "./useDragReorder";
 import styles from "./checklist.module.css";
 
 interface Props {
@@ -17,9 +18,10 @@ interface Props {
   parentSectionUid?: string | null;
   index?: number;
   total?: number;
+  dragProps?: RowDragProps;
 }
 
-function ChecklistItemRow({ item, level, parentTopUid, parentSectionUid, index, total }: Props) {
+function ChecklistItemRow({ item, level, parentTopUid, parentSectionUid, index, total, dragProps }: Props) {
   const setItemStatus = useAgendaStore((s) => s.setItemStatus);
   const setItemKommentar = useAgendaStore((s) => s.setItemKommentar);
   const setItemSchweregrad = useAgendaStore((s) => s.setItemSchweregrad);
@@ -57,8 +59,10 @@ function ChecklistItemRow({ item, level, parentTopUid, parentSectionUid, index, 
     removeItem(parentTopUid, parentSectionUid ?? null, item.uid);
   }
 
+  const rowClass = [level > 0 ? styles.itemChild : "", dragRowClass(styles, dragProps)].filter(Boolean).join(" ");
+
   return (
-    <div ref={containerRef} className={level > 0 ? styles.itemChild : undefined}>
+    <div ref={containerRef} className={rowClass || undefined} {...(dragProps?.rowProps ?? {})}>
       <div className={styles.itemRow}>
         <StatusSelector value={item.status} onChange={handleStatusChange} />
         <div className={styles.itemMain}>
@@ -80,6 +84,7 @@ function ChecklistItemRow({ item, level, parentTopUid, parentSectionUid, index, 
                 onMoveDown={() => moveItem(parentTopUid, parentSectionUid ?? null, item.uid, 1)}
                 onDelete={requestDelete}
                 ariaSubject={`Punkt "${item.text}"`}
+                dragHandleProps={dragProps?.handleProps}
               />
             </div>
           ) : (

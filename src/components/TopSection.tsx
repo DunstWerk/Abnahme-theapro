@@ -7,15 +7,17 @@ import SubSection from "./SubSection";
 import DebouncedInput from "./DebouncedInput";
 import EditControls from "./EditControls";
 import ConfirmDialog from "./ConfirmDialog";
+import { useDragReorder, dragPropsFor, dragRowClass, type RowDragProps } from "./useDragReorder";
 import styles from "./checklist.module.css";
 
 interface Props {
   top: Top;
   index: number;
   total: number;
+  dragProps?: RowDragProps;
 }
 
-function TopSection({ top, index, total }: Props) {
+function TopSection({ top, index, total, dragProps }: Props) {
   const collapsed = useAgendaStore((s) => s.ui.collapsedTops.has(top.uid));
   const filter = useAgendaStore((s) => s.ui.filter);
   const toggle = useAgendaStore((s) => s.toggleTopCollapsed);
@@ -27,6 +29,8 @@ function TopSection({ top, index, total }: Props) {
   const removeTop = useAgendaStore((s) => s.removeTop);
   const addSection = useAgendaStore((s) => s.addSection);
   const addItem = useAgendaStore((s) => s.addItem);
+  const reorderSection = useAgendaStore((s) => s.reorderSection);
+  const reorderItem = useAgendaStore((s) => s.reorderItem);
   const [confirming, setConfirming] = useState(false);
 
   const progress = useMemo(() => computeTopProgress(top), [top]);
@@ -35,23 +39,23 @@ function TopSection({ top, index, total }: Props) {
   const isEmptyAfterFilter =
     !editMode && filter !== "alle" && visibleTop.items.length === 0 && visibleTop.sections.every((s) => s.items.length === 0);
 
+  const itemDrag = useDragReorder(rendered.items, (uid, targetIndex) => reorderItem(top.uid, null, uid, targetIndex));
+  const sectionDrag = useDragReorder(rendered.sections, (uid, targetIndex) => reorderSection(top.uid, uid, targetIndex));
+
   if (isEmptyAfterFilter) return null;
 
   const heading = top.nummer != null ? `TOP ${top.nummer} – ${top.titel}` : top.titel;
 
   return (
-    <section id={`top-${top.uid}`} className={styles.topSection}>
+    <section
+      id={`top-${top.uid}`}
+      className={`${styles.topSection} ${dragRowClass(styles, dragProps)}`.trim()}
+      {...(dragProps?.rowProps ?? {})}
+    >
       <div className={editMode ? styles.topHeaderEdit : styles.topHeader} onClick={editMode ? undefined : () => toggle(top.uid)}>
         {editMode ? (
           <div className={styles.topTitleEdit}>
-            <DebouncedInput
-              uid={`${top.uid}:nr`}
-              initialValue={top.nummer ?? ""}
-              placeholder="Nr."
-              className={styles.editInputNummer}
-              ariaLabel="TOP-Nummer"
-              onCommit={(v) => updateTop(top.uid, { nummer: v })}
-            />
+            <span className={styles.topNummerStatic}>TOP {top.nummer}</span>
             <DebouncedInput
               uid={top.uid}
               initialValue={top.titel}
@@ -59,7 +63,7 @@ function TopSection({ top, index, total }: Props) {
               ariaLabel="TOP-Titel"
               autoFocus={isFocusTarget}
               onAutoFocused={() => clearFocus(top.uid)}
-              onCommit={(v) => updateTop(top.uid, { titel: v })}
+              onCommit={(v) => updateTop(top.uid, v)}
             />
           </div>
         ) : (
@@ -74,6 +78,7 @@ function TopSection({ top, index, total }: Props) {
               onMoveDown={() => moveTop(top.uid, 1)}
               onDelete={() => setConfirming(true)}
               ariaSubject={`TOP "${heading}"`}
+              dragHandleProps={dragProps?.handleProps}
             />
           )}
           {progress.mangelCount > 0 && <span className={styles.mangelPill}>{progress.mangelCount} Mangel</span>}
@@ -109,10 +114,18 @@ function TopSection({ top, index, total }: Props) {
               parentSectionUid={null}
               index={i}
               total={rendered.items.length}
+              dragProps={editMode ? dragPropsFor(itemDrag, item.uid) : undefined}
             />
           ))}
           {rendered.sections.map((section, i) => (
-            <SubSection key={section.uid} section={section} topUid={top.uid} index={i} total={rendered.sections.length} />
+            <SubSection
+              key={section.uid}
+              section={section}
+              topUid={top.uid}
+              index={i}
+              total={rendered.sections.length}
+              dragProps={editMode ? dragPropsFor(sectionDrag, section.uid) : undefined}
+            />
           ))}
           {editMode && (
             <div className={styles.addButtonRow}>

@@ -1,3 +1,4 @@
+import type { HTMLAttributes } from "react";
 import styles from "./checklist.module.css";
 
 interface Props {
@@ -8,6 +9,8 @@ interface Props {
   onDelete: () => void;
   /** Für aria-labels, z.B. "TOP 3 – Sicherheit". */
   ariaSubject: string;
+  /** Wenn gesetzt, wird davor ein Ziehgriff für Drag & Drop gerendert (siehe useDragReorder). */
+  dragHandleProps?: HTMLAttributes<HTMLElement>;
 }
 
 function stop(e: React.MouseEvent, fn: () => void) {
@@ -16,12 +19,32 @@ function stop(e: React.MouseEvent, fn: () => void) {
   fn();
 }
 
-/** Wiederverwendbare Verschieben/Löschen-Steuerelemente für TOP-, Abschnitts- und Punkt-Zeilen
- * im Bearbeitungsmodus. Stoppt Klick-Propagation, da die TOP-Variante innerhalb der
+/** Wiederverwendbare Ziehgriff/Verschieben/Löschen-Steuerelemente für TOP-, Abschnitts- und
+ * Punkt-Zeilen im Bearbeitungsmodus. Stoppt Klick-Propagation, da die TOP-Variante innerhalb der
  * klickbaren .topHeader-Zeile sitzt. */
-export default function EditControls({ canMoveUp, canMoveDown, onMoveUp, onMoveDown, onDelete, ariaSubject }: Props) {
+export default function EditControls({
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
+  onDelete,
+  ariaSubject,
+  dragHandleProps,
+}: Props) {
   return (
     <div className={styles.editControls}>
+      {dragHandleProps && (
+        <span
+          {...dragHandleProps}
+          className={styles.dragHandle}
+          role="button"
+          tabIndex={-1}
+          aria-label={`${ariaSubject} verschieben (ziehen)`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          ⠿
+        </span>
+      )}
       <button
         type="button"
         className={styles.editButton}

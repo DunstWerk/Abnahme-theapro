@@ -85,6 +85,38 @@ function moveInArray<T>(arr: T[], index: number, delta: number): T[] {
   return next;
 }
 
+/** Verschiebt das Element an fromIndex an eine beliebige Zielposition (für Drag & Drop; die
+ * ▲▼-Buttons nutzen weiterhin moveInArray). targetIndex bezieht sich auf die Liste NACH dem
+ * Herausnehmen des Elements (0..arr.length ist gültig, arr.length = Einfügen ans Ende). */
+function moveToIndex<T>(arr: T[], fromIndex: number, toIndex: number): T[] {
+  if (fromIndex < 0 || fromIndex >= arr.length) return arr;
+  const next = [...arr];
+  const [item] = next.splice(fromIndex, 1);
+  const clamped = Math.max(0, Math.min(toIndex, next.length));
+  next.splice(clamped, 0, item);
+  return next;
+}
+
+/** Weist allen TOPs fortlaufende Nummern 1..N zu – im Bearbeitungsmodus ist die TOP-Nummer nie
+ * manuell gesetzt, sondern ergibt sich immer aus der Reihenfolge. Zieht bestehende
+ * Abschnittsnummern mit, wenn sie das alte TOP-Nummer-Präfix tragen (z.B. "2.1" -> "3.1"), damit
+ * keine inkonsistente Anzeige wie "TOP 3" mit Abschnitt "2.1" darunter entsteht. */
+function renumberTops(tops: Top[]): Top[] {
+  return tops.map((top, idx) => {
+    const nummer = String(idx + 1);
+    if (top.nummer === nummer) return top;
+    const oldPrefix = top.nummer != null ? `${top.nummer}.` : null;
+    const sections = oldPrefix
+      ? top.sections.map((sec) => {
+          if (sec.nummer == null || !sec.nummer.startsWith(oldPrefix)) return sec;
+          const secNummer = `${nummer}.${sec.nummer.slice(oldPrefix.length)}`;
+          return { ...sec, nummer: secNummer, rawHeading: formatSectionHeading(secNummer, sec.titel) };
+        })
+      : top.sections;
+    return { ...top, nummer, sections, rawHeading: formatTopHeading(nummer, top.titel) };
+  });
+}
+
 /** Ersetzt genau ein TOP per uid, immutabel mit struktureller Teilung (unbeteiligte
  * TOPs behalten ihre Objektreferenz, damit React.memo sie nicht neu rendert). */
 function withTop(doc: AgendaDocument, topUid: string, fn: (top: Top) => Top): AgendaDocument {
@@ -190,19 +222,25 @@ interface AgendaState {
   clearFocus: (uid: string) => void;
   setSkipDeleteConfirm: (value: boolean) => void;
 
-  addTop: () => void;
+  /** beforeTopUid gesetzt -> neues TOP wird direkt davor eingefügt; sonst ans Ende angehängt.
+   * TOP-Nummern werden danach immer automatisch neu 1..N durchnummeriert. */
+  addTop: (beforeTopUid?: string) => void;
   removeTop: (topUid: string) => void;
   moveTop: (topUid: string, delta: -1 | 1) => void;
-  updateTop: (topUid: string, patch: { nummer?: string; titel?: string }) => void;
+  reorderTop: (topUid: string, targetIndex: number) => void;
+  /** Nummer ist nicht mehr manuell setzbar (siehe renumberTops) – nur noch der Titel. */
+  updateTop: (topUid: string, titel: string) => void;
 
   addSection: (topUid: string) => void;
   removeSection: (topUid: string, sectionUid: string) => void;
   moveSection: (topUid: string, sectionUid: string, delta: -1 | 1) => void;
+  reorderSection: (topUid: string, sectionUid: string, targetIndex: number) => void;
   updateSection: (topUid: string, sectionUid: string, patch: { nummer?: string; titel?: string }) => void;
 
   addItem: (topUid: string, sectionUid: string | null) => void;
   removeItem: (topUid: string, sectionUid: string | null, itemUid: string) => void;
   moveItem: (topUid: string, sectionUid: string | null, itemUid: string, delta: -1 | 1) => void;
+  reorderItem: (topUid: string, sectionUid: string | null, itemUid: string, targetIndex: number) => void;
   setItemText: (uid: string, text: string) => void;
 
   toggleTopCollapsed: (uid: string) => void;
@@ -472,17 +510,22 @@ export const useAgendaStore = create<AgendaState>((set, get) => {
         return { prefs: { skipDeleteConfirm: value } };
       }),
 
-    addTop: () =>
+    addTop: (beforeTopUid) =>
       set((state) => {
-        const top = createEmptyTop(String(state.doc.tops.length + 1));
-        const doc = { ...state.doc, tops: [...state.doc.tops, top] };
+        const top = createEmptyTop(null);
+        const idx = beforeTopUid ? state.doc.tops.findIndex((t) => t.uid === beforeTopUid) : -1;
+        const tops = renumberTops(
+          idx === -1 ? [...state.doc.tops, top] : [...state.doc.tops.slice(0, idx), top, ...state.doc.tops.slice(idx)],
+        );
+        const doc = { ...state.doc, tops };
         afterChange(doc);
         return { doc, dirtySinceExport: true, ui: { ...state.ui, focusUid: top.uid } };
       }),
 
     removeTop: (topUid) =>
       set((state) => {
-        const doc = { ...state.doc, tops: state.doc.tops.filter((t) => t.uid !== topUid) };
+        const tops = renumberTops(state.doc.tops.filter((t) => t.uid !== topUid));
+        const doc = { ...state.doc, tops };
         afterChange(doc);
         const collapsedTops = new Set(state.ui.collapsedTops);
         collapsedTops.delete(topUid);
@@ -493,19 +536,30 @@ export const useAgendaStore = create<AgendaState>((set, get) => {
       set((state) => {
         const index = state.doc.tops.findIndex((t) => t.uid === topUid);
         if (index === -1) return {};
-        const tops = moveInArray(state.doc.tops, index, delta);
-        if (tops === state.doc.tops) return {};
-        const doc = { ...state.doc, tops };
+        const moved = moveInArray(state.doc.tops, index, delta);
+        if (moved === state.doc.tops) return {};
+        const doc = { ...state.doc, tops: renumberTops(moved) };
         afterChange(doc);
         return { doc, dirtySinceExport: true };
       }),
 
-    updateTop: (topUid, patch) =>
+    reorderTop: (topUid, targetIndex) =>
+      set((state) => {
+        const fromIndex = state.doc.tops.findIndex((t) => t.uid === topUid);
+        if (fromIndex === -1) return {};
+        const moved = moveToIndex(state.doc.tops, fromIndex, targetIndex);
+        if (moved === state.doc.tops) return {};
+        const doc = { ...state.doc, tops: renumberTops(moved) };
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    updateTop: (topUid, titel) =>
       set((state) => {
         const doc = withTop(state.doc, topUid, (top) => {
-          const nummer = patch.nummer !== undefined ? (patch.nummer.trim() === "" ? null : patch.nummer.trim()) : top.nummer;
-          const titel = patch.titel !== undefined ? (patch.titel.trim() === "" ? DEFAULT_TOP_TITEL : patch.titel.trim()) : top.titel;
-          return { ...top, nummer, titel, rawHeading: formatTopHeading(nummer, titel) };
+          const t = titel.trim() === "" ? DEFAULT_TOP_TITEL : titel.trim();
+          if (t === top.titel) return top;
+          return { ...top, titel: t, rawHeading: formatTopHeading(top.nummer, t) };
         });
         if (doc === state.doc) return {};
         afterChange(doc);
@@ -542,6 +596,19 @@ export const useAgendaStore = create<AgendaState>((set, get) => {
           const index = top.sections.findIndex((s) => s.uid === sectionUid);
           if (index === -1) return top;
           const sections = moveInArray(top.sections, index, delta);
+          return sections === top.sections ? top : { ...top, sections };
+        });
+        if (doc === state.doc) return {};
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    reorderSection: (topUid, sectionUid, targetIndex) =>
+      set((state) => {
+        const doc = withTop(state.doc, topUid, (top) => {
+          const fromIndex = top.sections.findIndex((s) => s.uid === sectionUid);
+          if (fromIndex === -1) return top;
+          const sections = moveToIndex(top.sections, fromIndex, targetIndex);
           return sections === top.sections ? top : { ...top, sections };
         });
         if (doc === state.doc) return {};
@@ -586,6 +653,18 @@ export const useAgendaStore = create<AgendaState>((set, get) => {
           const index = items.findIndex((i) => i.uid === itemUid);
           if (index === -1) return items;
           return moveInArray(items, index, delta);
+        });
+        if (doc === state.doc) return {};
+        afterChange(doc);
+        return { doc, dirtySinceExport: true };
+      }),
+
+    reorderItem: (topUid, sectionUid, itemUid, targetIndex) =>
+      set((state) => {
+        const doc = withItems(state.doc, topUid, sectionUid, (items) => {
+          const fromIndex = items.findIndex((i) => i.uid === itemUid);
+          if (fromIndex === -1) return items;
+          return moveToIndex(items, fromIndex, targetIndex);
         });
         if (doc === state.doc) return {};
         afterChange(doc);
