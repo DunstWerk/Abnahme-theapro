@@ -15,7 +15,7 @@ interface Props {
 
 export default function StatusSelector({ value, onChange }: Props) {
   return (
-    <div className={styles.statusSelector} role="radiogroup" aria-label="Status">
+    <div className={styles.statusSelector} data-tutorial="status-selector" role="radiogroup" aria-label="Status">
       {OPTIONS.map((opt) => (
         <button
           key={opt.status}

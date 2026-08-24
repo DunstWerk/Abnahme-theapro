@@ -1,0 +1,122 @@
+.clickBlocker {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  background: transparent;
+}
+
+.plainDark {
+  position: fixed;
+  inset: 0;
+  z-index: 151;
+  background: rgba(20, 20, 24, 0.72);
+  pointer-events: none;
+}
+
+.spotlight {
+  position: fixed;
+  z-index: 151;
+  pointer-events: none;
+  border-radius: 10px;
+  outline: 2px solid var(--c-coral);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 9999px rgba(20, 20, 24, 0.72);
+  transition:
+    top 0.25s ease,
+    left 0.25s ease,
+    width 0.25s ease,
+    height 0.25s ease;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 152;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  background: var(--c-white);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  transition:
+    top 0.25s ease,
+    left 0.25s ease,
+    bottom 0.25s ease;
+}
+
+.tooltipCentered {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.tooltipStep {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--c-coral);
+  font-weight: 700;
+}
+
+.tooltipTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--c-ink);
+}
+
+.tooltipText {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #444;
+  line-height: 1.4;
+}
+
+.tooltipActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.tooltipSpacer {
+  flex: 1;
+}
+
+.skipButton {
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 0.82rem;
+  text-decoration: underline;
+  padding: 4px 2px;
+}
+
+.backButton {
+  background: var(--surface);
+  color: var(--c-ink);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 7px 14px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.nextButton {
+  background: var(--c-coral);
+  color: var(--c-white);
+  border: none;
+  border-radius: var(--radius);
+  padding: 7px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.nextButton:hover {
+  opacity: 0.9;
+}

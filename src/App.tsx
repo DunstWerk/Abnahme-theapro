@@ -3,7 +3,9 @@ import { useAgendaStore } from "./state/agendaStore";
 import { useDragReorder, dragPropsFor } from "./components/useDragReorder";
 import { registerFlushOnUnload } from "./state/persistence";
 import { isUnlocked } from "./auth/passwordGate";
+import { hasSeenTutorial, markTutorialSeen } from "./onboarding/tutorial";
 import PasswordGate from "./components/PasswordGate";
+import Tutorial from "./components/Tutorial";
 import Toolbar from "./components/Toolbar";
 import TopNav from "./components/TopNav";
 import HeaderForm from "./components/HeaderForm";
@@ -23,6 +25,7 @@ import checklistStyles from "./components/checklist.module.css";
 
 export default function App() {
   const [unlocked, setUnlocked] = useState(() => isUnlocked());
+  const [tutorialOpen, setTutorialOpen] = useState(() => !hasSeenTutorial());
   const doc = useAgendaStore((s) => s.doc);
   const dirtySinceExport = useAgendaStore((s) => s.dirtySinceExport);
   const setHinweis = useAgendaStore((s) => s.setHinweis);
@@ -50,9 +53,15 @@ export default function App() {
     return <PasswordGate onUnlock={() => setUnlocked(true)} />;
   }
 
+  function closeTutorial() {
+    markTutorialSeen();
+    setTutorialOpen(false);
+  }
+
   return (
     <div className={styles.app}>
-      <Toolbar />
+      {tutorialOpen && <Tutorial onClose={closeTutorial} />}
+      <Toolbar setTutorialOpen={setTutorialOpen} />
       {editMode && (
         <div className={styles.editModeBanner}>
           <span>Bearbeitungsmodus aktiv – die Agenda-Struktur kann geändert werden.</span>

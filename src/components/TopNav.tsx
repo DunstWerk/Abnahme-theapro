@@ -18,7 +18,7 @@ export default function TopNav() {
   const progressByTop = useMemo(() => tops.map((t) => computeTopProgress(t)), [tops]);
 
   return (
-    <nav className={styles.nav}>
+    <nav className={styles.nav} data-tutorial="topnav">
       <div className={styles.navPanel}>
         {!editMode && (
           <div className={styles.filterRow}>

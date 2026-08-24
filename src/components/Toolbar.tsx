@@ -8,7 +8,11 @@ import styles from "./layout.module.css";
 
 type PendingAction = { type: "import"; markdown: string } | { type: "template" } | { type: "reset" } | null;
 
-export default function Toolbar() {
+interface Props {
+  setTutorialOpen: (open: boolean) => void;
+}
+
+export default function Toolbar({ setTutorialOpen }: Props) {
   const doc = useAgendaStore((s) => s.doc);
   const loadFromMarkdown = useAgendaStore((s) => s.loadFromMarkdown);
   const loadTemplate = useAgendaStore((s) => s.loadTemplate);
@@ -75,7 +79,12 @@ export default function Toolbar() {
     <div className={styles.toolbar}>
       <span className={styles.brand}>VOB-Abnahme Helfer</span>
 
-      <button type="button" className={styles.toolbarButton} onClick={() => fileInputRef.current?.click()}>
+      <button
+        type="button"
+        data-tutorial="toolbar-files"
+        className={styles.toolbarButton}
+        onClick={() => fileInputRef.current?.click()}
+      >
         Agenda importieren (.md)
       </button>
       <input
@@ -102,17 +111,27 @@ export default function Toolbar() {
       </button>
       <button
         type="button"
+        data-tutorial="toolbar-editmode"
         aria-pressed={editMode}
         className={editMode ? styles.toolbarButtonToggleActive : styles.toolbarButton}
         onClick={() => setEditMode(!editMode)}
       >
         {editMode ? "✎ Bearbeitungsmodus: an" : "✎ Bearbeitungsmodus"}
       </button>
+      <button type="button" className={styles.toolbarButton} onClick={() => setTutorialOpen(true)}>
+        ? Tutorial
+      </button>
 
       <span className={styles.toolbarSpacer} />
 
       {savedIndicator && <span className={styles.saveIndicator}>Gesichert {savedIndicator}</span>}
-      <button type="button" className={styles.toolbarButtonPrimary} onClick={exportPdf} disabled={pdfBusy}>
+      <button
+        type="button"
+        data-tutorial="toolbar-pdf"
+        className={styles.toolbarButtonPrimary}
+        onClick={exportPdf}
+        disabled={pdfBusy}
+      >
         {pdfBusy ? "PDF wird erstellt…" : "PDF exportieren"}
       </button>
 

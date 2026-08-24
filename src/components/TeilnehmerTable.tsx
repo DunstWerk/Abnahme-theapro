@@ -8,7 +8,7 @@ export default function TeilnehmerTable() {
   const removeTeilnehmer = useAgendaStore((s) => s.removeTeilnehmer);
 
   return (
-    <div className={styles.panel}>
+    <div className={styles.panel} data-tutorial="teilnehmer">
       <div className={styles.panelTitle}>Teilnehmer</div>
       <table className={styles.table}>
         <thead>

@@ -25,6 +25,10 @@ VOB-Abnahmeprotokoll beigefügt werden kann.
   (metrisch identisch zu Arial, siehe unten) bei 10pt.
 - Autosave im Browser (localStorage) inkl. Sicherungskopie vor
   Import/Reset.
+- Interaktive Einführungs-Tour (Spotlight-Overlay), die beim ersten Öffnen
+  automatisch startet und alle Bereiche der App erklärt; jederzeit
+  überspringbar und über den "? Tutorial"-Button in der Toolbar erneut
+  aufrufbar.
 
 ## Entwicklung
 

@@ -10,7 +10,7 @@ export default function MaengelPanel() {
   const maengel = useMemo(() => compileMaengel(doc), [doc]);
 
   return (
-    <div className={styles.panel}>
+    <div className={styles.panel} data-tutorial="maengel-panel">
       <div className={styles.header} onClick={() => setOpen((o) => !o)}>
         <span className={styles.headerTitle}>Mängelliste (live)</span>
         <span className={styles.count}>{maengel.length}</span>

@@ -28,7 +28,7 @@ export default function HeaderForm() {
   const setUebernahmeBezeichnung = useAgendaStore((s) => s.setUebernahmeBezeichnung);
 
   return (
-    <div className={styles.panel}>
+    <div className={styles.panel} data-tutorial="header-form">
       <input
         className={styles.titleInput}
         value={titel}

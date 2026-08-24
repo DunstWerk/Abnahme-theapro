@@ -26,7 +26,7 @@ export default function AbnahmeErgebnisForm() {
   const counts = useMemo(() => countMaengelBySchweregrad(doc), [doc]);
 
   return (
-    <div className={styles.panel}>
+    <div className={styles.panel} data-tutorial="abnahmeergebnis">
       <div className={styles.panelTitle}>Ergebnis der {abnahmeWort(doc, true)}</div>
 
       <div className={styles.radioGroup}>
