@@ -19,6 +19,7 @@ exported: 2026-08-11T00:00:00Z
 - **Uhrzeit:** 
 - **Ort:** 
 - **Rechtsgrundlage ÖNORM:** nein
+- **Bezeichnung Übernahme/Abnahme:** 
 
 ## Teilnehmer
 

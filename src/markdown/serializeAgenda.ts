@@ -10,6 +10,7 @@ import {
   HEADER_FIELD_ORDER,
   RECHTSGRUNDLAGE_LABEL,
   STATUS_LABEL,
+  UEBERNAHME_BEZEICHNUNG_LABEL,
   STATUS_TO_CHECKBOX,
   TEILNEHMER_HEADER_ROW,
   TEILNEHMER_SEP_ROW,
@@ -62,6 +63,7 @@ function serializeRahmendaten(doc: AgendaDocument): string[] {
     lines.push(`- **${entry.label}:** ${doc.header[entry.field]}`);
   }
   lines.push(`- **${RECHTSGRUNDLAGE_LABEL}:** ${doc.oenorm ? "ja" : "nein"}`);
+  lines.push(`- **${UEBERNAHME_BEZEICHNUNG_LABEL}:** ${doc.uebernahmeBezeichnung}`);
   for (const [label, value] of Object.entries(doc.header.weitere)) {
     lines.push(`- **${label}:** ${value}`);
   }

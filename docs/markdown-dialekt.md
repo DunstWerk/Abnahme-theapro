@@ -29,6 +29,7 @@ exported: 2026-09-03T11:42:00Z
 - **Uhrzeit:** 09:00
 - **Ort:** ...
 - **Rechtsgrundlage ÖNORM:** nein
+- **Bezeichnung Übernahme/Abnahme:** ...
 
 ## Teilnehmer
 
@@ -197,6 +198,13 @@ gespeichert:
   "Übernahme" statt "Abnahme", u. a. in Titel, Anlagen-Titeln und den
   §-Überschriften/-Sätzen. In der App per Checkbox oben in den
   Projektdaten umschaltbar.
+- **`Bezeichnung Übernahme/Abnahme`** (in `## Rahmendaten`): Freitext,
+  überschreibt das Wort "Übernahme"/"Abnahme" überall dort, wo es als
+  Substantiv auftaucht (z. B. `Teilübernahme` bei einer Teilübernahme
+  nach ÖNORM, `Teilabnahme` im VOB-Modus). Leer = Standardwort je nach
+  `Rechtsgrundlage ÖNORM`. Die Ergebnis-Sätze in §3.1 ("... wurde
+  übernommen.") bleiben davon bewusst unberührt. In der App per
+  Textfeld direkt unter der ÖNORM-Checkbox editierbar.
 - **`## Abnahmeergebnis`** (§3): `Ergebnis` ist `ohne Mängel`,
   `nicht abgenommen` oder `mit Mängeln`; `Frist angemessen` ist `ja`
   oder `nein`; `Fertigstellung` ist `termingerecht` oder

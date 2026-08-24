@@ -27,7 +27,7 @@ export default function AbnahmeErgebnisForm() {
 
   return (
     <div className={styles.panel}>
-      <div className={styles.panelTitle}>Ergebnis der {abnahmeWort(doc.oenorm, true)}</div>
+      <div className={styles.panelTitle}>Ergebnis der {abnahmeWort(doc, true)}</div>
 
       <div className={styles.radioGroup}>
         <div style={{ fontSize: "0.85rem", color: "#555", marginBottom: 6 }}>3.1 &nbsp;Die Leistung wurde</div>
@@ -39,7 +39,7 @@ export default function AbnahmeErgebnisForm() {
               checked={(n.ergebnis ?? "offen") === art}
               onChange={() => setField("ergebnis", art)}
             />
-            {ergebnisLabel(art, doc.oenorm, bereich)}
+            {ergebnisLabel(art, doc, bereich)}
           </label>
         ))}
         <label className={styles.radioRow}>

@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { parseAgenda } from "../parseAgenda";
 import { serializeAgenda } from "../serializeAgenda";
-import { createEmptyAgenda, createEmptyItem, type AgendaDocument, type Top } from "../../types/agenda";
+import {
+  abnahmeWort,
+  createEmptyAgenda,
+  createEmptyItem,
+  ergebnisLabel,
+  type AgendaDocument,
+  type Top,
+} from "../../types/agenda";
 
 const FIXED_NOW = new Date("2026-09-03T11:42:00.000Z");
 
@@ -226,6 +233,52 @@ describe("ÖNORM-Rechtsgrundlage (oenorm)", () => {
     const doc = parseAgenda(raw);
     expect(doc.oenorm).toBe(false);
     expect(doc.warnings.filter((w) => w.severity === "warn")).toEqual([]);
+  });
+});
+
+describe("Übernahme/Abnahme-Bezeichnung (uebernahmeBezeichnung)", () => {
+  it("Default '' wird als leere Bullet-Zeile serialisiert und bleibt beim Round-Trip ''", () => {
+    const doc = buildSampleDoc();
+    expect(doc.uebernahmeBezeichnung).toBe("");
+    const md = serializeAgenda(doc, { now: FIXED_NOW });
+    expect(md).toContain("- **Bezeichnung Übernahme/Abnahme:** \n");
+    const parsed = parseAgenda(md);
+    expect(parsed.uebernahmeBezeichnung).toBe("");
+    expect(parsed.warnings.filter((w) => w.severity === "warn")).toEqual([]);
+  });
+
+  it("gesetzte Bezeichnung ('Teilübernahme') bleibt beim Round-Trip erhalten", () => {
+    const doc = buildSampleDoc();
+    doc.oenorm = true;
+    doc.uebernahmeBezeichnung = "Teilübernahme";
+    const md = serializeAgenda(doc, { now: FIXED_NOW });
+    expect(md).toContain("- **Bezeichnung Übernahme/Abnahme:** Teilübernahme");
+    const parsed = parseAgenda(md);
+    expect(parsed.uebernahmeBezeichnung).toBe("Teilübernahme");
+    expect(parsed.warnings.filter((w) => w.severity === "warn")).toEqual([]);
+  });
+
+  it("alte .md-Dateien ohne die Bezeichnung-Zeile werden klaglos als uebernahmeBezeichnung:'' gelesen", () => {
+    const raw = "# Titel\n\n## TOP 1 – Test\n\n- [ ] Punkt\n";
+    const doc = parseAgenda(raw);
+    expect(doc.uebernahmeBezeichnung).toBe("");
+    expect(doc.warnings.filter((w) => w.severity === "warn")).toEqual([]);
+  });
+
+  it("überschreibt nur das großgeschriebene Substantiv, nie die Verbform", () => {
+    const doc = buildSampleDoc();
+    doc.oenorm = true;
+    doc.uebernahmeBezeichnung = "Teilübernahme";
+    expect(abnahmeWort(doc, true)).toBe("Teilübernahme");
+    expect(abnahmeWort(doc)).toBe("übernommen");
+    expect(ergebnisLabel("ohneMaengel", doc, "")).toBe("ohne Mängel übernommen.");
+  });
+
+  it("leere Bezeichnung fällt auf den Standardwort je nach oenorm zurück", () => {
+    const doc = buildSampleDoc();
+    expect(abnahmeWort(doc, true)).toBe("Abnahme");
+    doc.oenorm = true;
+    expect(abnahmeWort(doc, true)).toBe("Übernahme");
   });
 });
 

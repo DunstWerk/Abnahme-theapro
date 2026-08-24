@@ -29,6 +29,7 @@ import {
   matchErgebnisLabel,
   matchHeaderLabel,
   RECHTSGRUNDLAGE_LABEL,
+  UEBERNAHME_BEZEICHNUNG_LABEL,
   splitTableRow,
 } from "./dialect";
 import {
@@ -176,6 +177,10 @@ function parseRahmendaten(lines: Line[], doc: AgendaDocument, warnings: ParseWar
     const value = m[2].trim();
     if (label.toLowerCase() === RECHTSGRUNDLAGE_LABEL.toLowerCase()) {
       doc.oenorm = normalizeJaNein(value);
+      continue;
+    }
+    if (label.toLowerCase() === UEBERNAHME_BEZEICHNUNG_LABEL.toLowerCase()) {
+      doc.uebernahmeBezeichnung = value;
       continue;
     }
     const field = matchHeaderLabel(label);

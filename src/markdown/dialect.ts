@@ -35,6 +35,9 @@ export const HEADER_BULLET_RE = /^-\s+\*\*([^*]+?):\*\*\s*(.*)$/;
 /** Eigenständige Ja/Nein-Bullet-Zeile in "## Rahmendaten", steuert AgendaDocument.oenorm. */
 export const RECHTSGRUNDLAGE_LABEL = "Rechtsgrundlage ÖNORM";
 
+/** Eigenständige Freitext-Bullet-Zeile in "## Rahmendaten", steuert AgendaDocument.uebernahmeBezeichnung. */
+export const UEBERNAHME_BEZEICHNUNG_LABEL = "Bezeichnung Übernahme/Abnahme";
+
 export const TABLE_ROW_RE = /^\|(.+)\|\s*$/;
 export const TABLE_SEP_RE = /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
 

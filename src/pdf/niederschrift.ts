@@ -27,7 +27,7 @@ function buildMassnahme(doc: AgendaDocument): Content[] {
       { text: "Auftraggeber (AG):", bold: true },
       { stack: [{ text: h.auftraggeber || "–" }, ...(h.auftraggeberAdresse ? [{ text: h.auftraggeberAdresse }] : [])] },
     ],
-    [{ text: `Datum der ${abnahmeWort(doc.oenorm, true)}:`, bold: true }, { text: formatDateDe(h.datum) || "–" }],
+    [{ text: `Datum der ${abnahmeWort(doc, true)}:`, bold: true }, { text: formatDateDe(h.datum) || "–" }],
   ];
   return [
     { text: "1.  Maßnahme", style: "subHeading", margin: [0, 10, 0, 6] },
@@ -38,7 +38,7 @@ function buildMassnahme(doc: AgendaDocument): Content[] {
 function buildTeilnehmerNiederschrift(doc: AgendaDocument): Content[] {
   if (doc.teilnehmer.length === 0) return [];
   return [
-    { text: `2.  Teilnehmer der ${abnahmeWort(doc.oenorm, true)}`, style: "subHeading", margin: [0, 4, 0, 6] },
+    { text: `2.  Teilnehmer der ${abnahmeWort(doc, true)}`, style: "subHeading", margin: [0, 4, 0, 6] },
     {
       table: {
         headerRows: 1,
@@ -73,16 +73,16 @@ function buildErgebnis(doc: AgendaDocument): Content[] {
   const fristText = n.maengelbeseitigungFrist ? formatDateDe(n.maengelbeseitigungFrist) : "________________";
 
   return [
-    { text: `3.  Ergebnis der ${abnahmeWort(doc.oenorm, true)}`, style: "subHeading", margin: [0, 10, 0, 6] },
+    { text: `3.  Ergebnis der ${abnahmeWort(doc, true)}`, style: "subHeading", margin: [0, 10, 0, 6] },
     {
       columns: [
         { width: 95, text: "3.1  Die Leistung wurde" },
         {
           width: "*",
           stack: [
-            ergebnisRow(n.ergebnis === "ohneMaengel", ergebnisLabel("ohneMaengel", doc.oenorm, bereich)),
-            ergebnisRow(n.ergebnis === "nichtAbgenommen", ergebnisLabel("nichtAbgenommen", doc.oenorm, bereich)),
-            ergebnisRow(n.ergebnis === "mitMaengeln", ergebnisLabel("mitMaengeln", doc.oenorm, bereich)),
+            ergebnisRow(n.ergebnis === "ohneMaengel", ergebnisLabel("ohneMaengel", doc, bereich)),
+            ergebnisRow(n.ergebnis === "nichtAbgenommen", ergebnisLabel("nichtAbgenommen", doc, bereich)),
+            ergebnisRow(n.ergebnis === "mitMaengeln", ergebnisLabel("mitMaengeln", doc, bereich)),
           ],
         },
       ],
@@ -194,7 +194,7 @@ export function buildNiederschrift(doc: AgendaDocument, now: Date): Content[] {
   return [
     buildLetterhead(doc, now),
     {
-      text: doc.oenorm ? "Niederschrift – Übernahme nach ÖNORM B 2110" : "Niederschrift - Abnahme nach VOB/B § 12",
+      text: `Niederschrift ${doc.oenorm ? "–" : "-"} ${abnahmeWort(doc, true)} nach ${doc.oenorm ? "ÖNORM B 2110" : "VOB/B § 12"}`,
       style: "docTitle",
       margin: [0, 4, 0, 10],
     },

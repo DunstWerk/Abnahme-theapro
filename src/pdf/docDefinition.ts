@@ -1,7 +1,7 @@
 import type { Content } from "pdfmake";
 import type { TDocumentDefinitions } from "pdfmake/interfaces";
 import type { AgendaDocument, ChecklistItem, SubSection, Top } from "../types/agenda";
-import { HEADER_LABELS } from "../types/agenda";
+import { HEADER_LABELS, abnahmeWort } from "../types/agenda";
 import { STATUS_LABEL } from "../markdown/dialect";
 import { statusGlyph } from "./statusGlyph";
 import { buildMaengelSection } from "./maengelTable";
@@ -148,9 +148,9 @@ function buildSignatureBlock(doc: AgendaDocument): Content {
 
 /** Anlage 3 = das ursprüngliche Checklisten-Protokoll (TOP für TOP), unverändert bis auf den Anlage-Titel. */
 function buildAnlage3(doc: AgendaDocument): Content[] {
-  const begehungTitel = doc.oenorm ? "Protokoll der Übernahmebegehung (Checkliste)" : "Protokoll der Abnahmebegehung (Checkliste)";
+  const begehungTitel = `Protokoll der ${abnahmeWort(doc, true)}begehung (Checkliste)`;
   return [
-    ...buildAnlageTitle(3, begehungTitel, doc.oenorm),
+    ...buildAnlageTitle(3, begehungTitel, doc),
     { text: doc.titel, style: "docTitle" },
     {
       canvas: [{ type: "line", x1: 0, y1: 0, x2: 495, y2: 0, lineWidth: 2, lineColor: pdfColors.coral }],
@@ -188,14 +188,14 @@ export function buildDocDefinition(doc: AgendaDocument, options: BuildDocDefinit
     pageSize: "A4",
     pageMargins: pdfTokens.pageMargins,
     info: {
-      title: `Niederschrift ${doc.oenorm ? "Übernahme" : "Abnahme"} – ${doc.header.projekt || doc.titel}`,
-      subject: doc.oenorm ? "Niederschrift – Übernahme nach ÖNORM B 2110" : "Niederschrift – Abnahme nach VOB/B § 12",
+      title: `Niederschrift ${abnahmeWort(doc, true)} – ${doc.header.projekt || doc.titel}`,
+      subject: `Niederschrift – ${abnahmeWort(doc, true)} nach ${doc.oenorm ? "ÖNORM B 2110" : "VOB/B § 12"}`,
     },
     header: (currentPage) =>
       currentPage > 1
         ? {
             columns: [
-              { text: doc.oenorm ? "Übernahme" : "Abnahme", style: "headerText" },
+              { text: abnahmeWort(doc, true), style: "headerText" },
               buildWordmark(65),
             ],
             margin: [50, 22, 50, 0] as [number, number, number, number],

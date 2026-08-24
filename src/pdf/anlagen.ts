@@ -1,5 +1,6 @@
 import type { Content } from "pdfmake";
 import type { AgendaDocument } from "../types/agenda";
+import { abnahmeWort } from "../types/agenda";
 import { compileMaengel } from "../state/selectors";
 import { formatDateDe } from "../markdown/normalize";
 import { dataTableLayout } from "./pdfLayouts";
@@ -19,9 +20,10 @@ function padRows(body: Content[][], minRows: number): Content[][] {
   return padded;
 }
 
-/** "Anlage N zur Abnahmeniederschrift"/"...Übernahmeniederschrift" + Untertitel, mit Seitenumbruch davor. */
-export function buildAnlageTitle(nr: number, untertitel: string, oenorm = false): Content[] {
-  const wort = oenorm ? "Übernahmeniederschrift" : "Abnahmeniederschrift";
+/** "Anlage N zur Abnahmeniederschrift"/"...Übernahmeniederschrift"/"...Teilübernahmeniederschrift"
+ * + Untertitel, mit Seitenumbruch davor. */
+export function buildAnlageTitle(nr: number, untertitel: string, doc: AgendaDocument): Content[] {
+  const wort = `${abnahmeWort(doc, true)}niederschrift`;
   return [
     { text: `Anlage ${nr} zur ${wort}`, style: "anlageTitle", pageBreak: "before", margin: [0, 0, 0, 2] },
     { text: untertitel, style: "subHeading", margin: [0, 0, 0, 10] },
@@ -50,7 +52,7 @@ export function buildAnlage1(doc: AgendaDocument): Content[] {
     }),
   ];
   return [
-    ...buildAnlageTitle(1, "Mängelliste", doc.oenorm),
+    ...buildAnlageTitle(1, "Mängelliste", doc),
     {
       text: doc.oenorm
         ? 'Die Einstufung in "wesentlich" und "unwesentlich" richtet sich nach den Bestimmungen der ÖNORM B 2110.'
@@ -76,7 +78,7 @@ export function buildAnlage2(doc: AgendaDocument): Content[] {
     ]),
   ];
   return [
-    ...buildAnlageTitle(2, "Feststellungen und Festlegungen", doc.oenorm),
+    ...buildAnlageTitle(2, "Feststellungen und Festlegungen", doc),
     {
       table: { headerRows: 1, widths: [42, 110, "*", 100], body: padRows(body, MIN_ROWS), dontBreakRows: true },
       layout: dataTableLayout,
