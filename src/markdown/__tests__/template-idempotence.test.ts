@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { parseAgenda } from "../parseAgenda";
 import { serializeAgenda } from "../serializeAgenda";
 
-const templatePath = fileURLToPath(new URL("../../templates/vorlage-goettingen.md", import.meta.url));
+const templatePath = fileURLToPath(new URL("../../templates/vorlage-standard.md", import.meta.url));
 
-describe("Vorlage vorlage-goettingen.md", () => {
+describe("Vorlage vorlage-standard.md", () => {
   it("ist ein sauberes, unbenutztes Template und round-tripped byteidentisch", () => {
     const raw = readFileSync(templatePath, "utf-8");
     const doc = parseAgenda(raw);

@@ -32,7 +32,7 @@ import { parseAgenda } from "../markdown/parseAgenda";
 import { serializeAgenda } from "../markdown/serializeAgenda";
 import { backupCurrent, loadPersisted, loadPrefs, savePrefs, scheduleSave } from "./persistence";
 import type { ItemFilter } from "./selectors";
-import vorlageGoettingen from "../templates/vorlage-goettingen.md?raw";
+import vorlageStandard from "../templates/vorlage-standard.md?raw";
 
 function mapItemsTree(items: ChecklistItem[], uid: string, fn: (item: ChecklistItem) => ChecklistItem): ChecklistItem[] {
   let changed = false;
@@ -281,7 +281,7 @@ function initialDocument(): { doc: AgendaDocument; ui: UiState } {
       // fällt durch auf Vorlage
     }
   }
-  return { doc: parseAgenda(vorlageGoettingen), ui: { collapsedTops: new Set(), filter: "alle", editMode: false, focusUid: null } };
+  return { doc: parseAgenda(vorlageStandard), ui: { collapsedTops: new Set(), filter: "alle", editMode: false, focusUid: null } };
 }
 
 export const useAgendaStore = create<AgendaState>((set, get) => {
@@ -720,7 +720,7 @@ export const useAgendaStore = create<AgendaState>((set, get) => {
 
     loadTemplate: () => {
       backupCurrent();
-      const doc = parseAgenda(vorlageGoettingen);
+      const doc = parseAgenda(vorlageStandard);
       set((state) => {
         afterChange(doc);
         return {
