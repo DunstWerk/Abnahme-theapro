@@ -120,3 +120,8 @@
 .nextButton:hover {
   opacity: 0.9;
 }
+
+.installButton {
+  composes: nextButton;
+  align-self: flex-start;
+}

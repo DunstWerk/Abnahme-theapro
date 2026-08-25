@@ -29,6 +29,9 @@ VOB-Abnahmeprotokoll beigefügt werden kann.
   automatisch startet und alle Bereiche der App erklärt; jederzeit
   überspringbar und über den "? Tutorial"-Button in der Toolbar erneut
   aufrufbar.
+- Installierbar als eigenständige App (PWA) auf Smartphone/Desktop, inkl.
+  Offline-Fähigkeit durch einen Service Worker – die Tour weist im letzten
+  Schritt darauf hin, je nach Gerät mit passender Anleitung.
 
 ## Entwicklung
 

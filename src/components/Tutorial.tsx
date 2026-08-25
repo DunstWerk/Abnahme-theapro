@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState, type CSSProperties } from "react";
+import InstallTutorialStep from "./InstallTutorialStep";
 import styles from "./tutorial.module.css";
 
 interface Step {
@@ -6,6 +7,8 @@ interface Step {
   selector: string | null;
   title: string;
   text: string;
+  /** Ersetzt den Standard-Text durch eine geräteabhängige Komponente (siehe unten). */
+  custom?: "install";
 }
 
 const STEPS: Step[] = [
@@ -57,7 +60,13 @@ const STEPS: Step[] = [
   {
     selector: '[data-tutorial="toolbar-pdf"]',
     title: "PDF exportieren",
-    text: "Erzeugt die vollständige Niederschrift inkl. aller Anlagen (Mängelliste, Feststellungen, Begehungs-Checkliste) als PDF zum Unterschreiben. Ihr könnt diese Tour jederzeit über den Hilfe-Button in der Toolbar erneut starten.",
+    text: "Erzeugt die vollständige Niederschrift inkl. aller Anlagen (Mängelliste, Feststellungen, Begehungs-Checkliste) als PDF zum Unterschreiben.",
+  },
+  {
+    selector: null,
+    title: "App installieren",
+    text: "",
+    custom: "install",
   },
 ];
 
@@ -162,7 +171,10 @@ export default function Tutorial({ onClose }: Props) {
           Schritt {stepIndex + 1} von {STEPS.length}
         </div>
         <div className={styles.tooltipTitle}>{step.title}</div>
-        <p className={styles.tooltipText}>{step.text}</p>
+        {step.custom === "install" ? <InstallTutorialStep /> : <p className={styles.tooltipText}>{step.text}</p>}
+        {isLast && (
+          <p className={styles.tooltipText}>Ihr könnt diese Tour jederzeit über den Hilfe-Button in der Toolbar erneut starten.</p>
+        )}
         <div className={styles.tooltipActions}>
           <button type="button" className={styles.skipButton} onClick={onClose}>
             Überspringen

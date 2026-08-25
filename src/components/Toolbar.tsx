@@ -3,6 +3,7 @@ import { useAgendaStore, serializeCurrentDocument } from "../state/agendaStore";
 import { readTextFile } from "../io/fileImport";
 import { downloadTextFile, buildFilename } from "../io/fileDownload";
 import { buildChecklistCsv, buildMaengelCsv } from "../io/csvExport";
+import { useInstallPrompt } from "../onboarding/installPrompt";
 import ConfirmDialog from "./ConfirmDialog";
 import styles from "./layout.module.css";
 
@@ -20,6 +21,7 @@ export default function Toolbar({ setTutorialOpen }: Props) {
   const markExported = useAgendaStore((s) => s.markExported);
   const editMode = useAgendaStore((s) => s.ui.editMode);
   const setEditMode = useAgendaStore((s) => s.setEditMode);
+  const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [pending, setPending] = useState<PendingAction>(null);
@@ -121,6 +123,11 @@ export default function Toolbar({ setTutorialOpen }: Props) {
       <button type="button" className={styles.toolbarButton} onClick={() => setTutorialOpen(true)}>
         ? Tutorial
       </button>
+      {canInstall && !isInstalled && (
+        <button type="button" className={styles.toolbarButton} onClick={() => void promptInstall()}>
+          ⬇ Installieren
+        </button>
+      )}
 
       <span className={styles.toolbarSpacer} />
 
