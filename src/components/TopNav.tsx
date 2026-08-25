@@ -36,7 +36,7 @@ export default function TopNav() {
         )}
         <ul className={styles.navList}>
           {tops.map((top, idx) => {
-            const heading = top.nummer != null ? `TOP ${top.nummer}` : top.titel;
+            const heading = top.nummer != null ? `TOP ${top.nummer} – ${top.titel}` : top.titel;
             const progress = progressByTop[idx];
             return (
               <li key={top.uid} className={styles.navItem}>
