@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { useAgendaStore, serializeCurrentDocument } from "../state/agendaStore";
 import { readTextFile } from "../io/fileImport";
-import { downloadTextFile, buildFilename } from "../io/fileDownload";
+import { saveFile, buildFilename, type SaveOutcome } from "../io/fileDownload";
 import { buildChecklistCsv, buildMaengelCsv } from "../io/csvExport";
 import { useInstallPrompt } from "../onboarding/installPrompt";
 import ConfirmDialog from "./ConfirmDialog";
+import Toast from "./Toast";
 import styles from "./layout.module.css";
 
-type PendingAction = { type: "import"; markdown: string } | { type: "template" } | { type: "reset" } | null;
+type PendingAction =
+  | { type: "import"; markdown: string; filename: string }
+  | { type: "template" }
+  | { type: "reset" }
+  | null;
 
-interface Props {
-  setTutorialOpen: (open: boolean) => void;
-}
-
-export default function Toolbar({ setTutorialOpen }: Props) {
+export default function Toolbar({ setTutorialOpen }: { setTutorialOpen: (open: boolean) => void }) {
   const doc = useAgendaStore((s) => s.doc);
   const loadFromMarkdown = useAgendaStore((s) => s.loadFromMarkdown);
   const loadTemplate = useAgendaStore((s) => s.loadTemplate);
@@ -27,6 +28,7 @@ export default function Toolbar({ setTutorialOpen }: Props) {
   const [pending, setPending] = useState<PendingAction>(null);
   const [savedIndicator, setSavedIndicator] = useState<string | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -42,36 +44,65 @@ export default function Toolbar({ setTutorialOpen }: Props) {
     e.target.value = "";
     if (!file) return;
     const text = await readTextFile(file);
-    setPending({ type: "import", markdown: text });
+    setPending({ type: "import", markdown: text, filename: file.name });
   }
 
   function confirmPending() {
     if (!pending) return;
-    if (pending.type === "import") loadFromMarkdown(pending.markdown);
+    if (pending.type === "import") {
+      loadFromMarkdown(pending.markdown);
+      setToast(
+        `„${pending.filename}" eingelesen. Änderungen werden erst durch „Agenda exportieren (.md)" in eine Datei geschrieben – erst dieser Export speichert sie dauerhaft (z. B. auf SharePoint).`,
+      );
+    }
     if (pending.type === "template") loadTemplate();
     if (pending.type === "reset") reset();
     setPending(null);
   }
 
-  function exportMarkdown() {
-    downloadTextFile(serializeCurrentDocument(), buildFilename(doc.titel, "md"), "text/markdown;charset=utf-8");
+  function announceExport(filename: string, outcome: SaveOutcome) {
+    if (outcome === "cancelled") return;
     markExported();
+    setToast(
+      outcome === "picker"
+        ? `„${filename}" gespeichert.`
+        : `„${filename}" heruntergeladen – liegt im Downloads-Ordner deines Browsers. Tipp: In der Download-Anzeige deines Browsers lässt sich der Ordner meist direkt über „Im Ordner anzeigen" öffnen.`,
+    );
   }
 
-  function exportChecklistCsv() {
-    downloadTextFile(buildChecklistCsv(doc), buildFilename(doc.titel, "csv"), "text/csv;charset=utf-8");
+  async function exportMarkdown() {
+    const filename = buildFilename(doc.titel, "md");
+    const outcome = await saveFile(serializeCurrentDocument(), filename, "text/markdown;charset=utf-8", {
+      description: "Markdown-Datei",
+      accept: { "text/markdown": [".md"] },
+    });
+    announceExport(filename, outcome);
   }
 
-  function exportMaengelCsv() {
-    downloadTextFile(buildMaengelCsv(doc), buildFilename(`${doc.titel}-maengel`, "csv"), "text/csv;charset=utf-8");
+  async function exportChecklistCsv() {
+    const filename = buildFilename(doc.titel, "csv");
+    const outcome = await saveFile(buildChecklistCsv(doc), filename, "text/csv;charset=utf-8", {
+      description: "CSV-Datei",
+      accept: { "text/csv": [".csv"] },
+    });
+    announceExport(filename, outcome);
+  }
+
+  async function exportMaengelCsv() {
+    const filename = buildFilename(`${doc.titel}-maengel`, "csv");
+    const outcome = await saveFile(buildMaengelCsv(doc), filename, "text/csv;charset=utf-8", {
+      description: "CSV-Datei",
+      accept: { "text/csv": [".csv"] },
+    });
+    announceExport(filename, outcome);
   }
 
   async function exportPdf() {
     setPdfBusy(true);
     try {
       const { generateAgendaPdf } = await import("../pdf/generatePdf");
-      await generateAgendaPdf(doc);
-      markExported();
+      const outcome = await generateAgendaPdf(doc);
+      announceExport(buildFilename(doc.titel, "pdf"), outcome);
     } finally {
       setPdfBusy(false);
     }
@@ -163,6 +194,8 @@ export default function Toolbar({ setTutorialOpen }: Props) {
           onCancel={() => setPending(null)}
         />
       )}
+
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
   );
 }

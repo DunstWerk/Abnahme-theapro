@@ -1,6 +1,6 @@
 import type { AgendaDocument } from "../types/agenda";
 import type * as PdfMakeApi from "pdfmake";
-import { buildFilename } from "../io/fileDownload";
+import { buildFilename, saveFile, type SaveOutcome } from "../io/fileDownload";
 import { ensureFontsRegistered } from "./pdfFonts";
 import { buildDocDefinition } from "./docDefinition";
 
@@ -8,7 +8,7 @@ interface PdfMakeModule {
   default: typeof PdfMakeApi;
 }
 
-export async function generateAgendaPdf(doc: AgendaDocument): Promise<void> {
+export async function generateAgendaPdf(doc: AgendaDocument): Promise<SaveOutcome> {
   // Der ESM-Namespace eines require()ten CJS-Moduls ist schreibgeschützt (nur Getter).
   // pdfmakes addFonts()/addVirtualFileSystem() mutieren "this" selbst (this.fonts = ...),
   // deshalb muss über die "default"-Eigenschaft das eigentliche, mutierbare Objekt
@@ -21,5 +21,9 @@ export async function generateAgendaPdf(doc: AgendaDocument): Promise<void> {
 
   const definition = buildDocDefinition(doc);
   const created = pdfMake.createPdf(definition);
-  await created.download(buildFilename(doc.titel, "pdf"));
+  const blob = await created.getBlob();
+  return saveFile(blob, buildFilename(doc.titel, "pdf"), "application/pdf", {
+    description: "PDF-Datei",
+    accept: { "application/pdf": [".pdf"] },
+  });
 }

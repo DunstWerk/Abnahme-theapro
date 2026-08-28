@@ -37,7 +37,7 @@ describe("detectInstallPlatform", () => {
       "iPhone",
       5,
     );
-    expect(detectInstallPlatform(false, false)).toBe("ios-safari");
+    expect(detectInstallPlatform(false, false)).toBe("ios");
   });
 
   it("erkennt iPadOS 13+ (meldet sich als 'Macintosh', aber mit Touch)", () => {
@@ -46,7 +46,7 @@ describe("detectInstallPlatform", () => {
       "MacIntel",
       5,
     );
-    expect(detectInstallPlatform(false, false)).toBe("ios-safari");
+    expect(detectInstallPlatform(false, false)).toBe("ios");
   });
 
   it("unterscheidet echtes macOS Safari (kein Touch) von iPadOS", () => {
@@ -58,14 +58,20 @@ describe("detectInstallPlatform", () => {
     expect(detectInstallPlatform(false, false)).toBe("unsupported");
   });
 
-  it("erkennt Chrome auf iOS (CriOS) nicht als 'echtes' Safari", () => {
+  it("erkennt auch Chrome/Firefox/Edge auf iOS als 'ios' (laufen alle auf WebKit mit demselben Share-Sheet)", () => {
     setNavigator(
       "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.0.0 Mobile/15E148 Safari/604.1",
       "iPhone",
       5,
     );
-    // CriOS unterstützt kein "Zum Home-Bildschirm hinzufügen" wie Safari – bewusst als "unsupported" behandelt.
-    expect(detectInstallPlatform(false, false)).toBe("unsupported");
+    expect(detectInstallPlatform(false, false)).toBe("ios");
+
+    setNavigator(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/120.0 Mobile/15E148 Safari/605.1.15",
+      "iPhone",
+      5,
+    );
+    expect(detectInstallPlatform(false, false)).toBe("ios");
   });
 
   it("fällt auf 'unsupported' zurück (z. B. Desktop Firefox)", () => {

@@ -30,12 +30,13 @@ export default function InstallTutorialStep() {
     );
   }
 
-  if (platform === "ios-safari") {
+  if (platform === "ios") {
     return (
       <p className={styles.tooltipText}>
         Diese App lässt sich wie eine normale App installieren – dann startet sie über ein eigenes Icon, ganz ohne
-        Browser-Adressleiste, und funktioniert auch offline. Auf dem iPhone/iPad geht das über Safari: Teilen-Symbol
-        (Quadrat mit Pfeil nach oben) antippen, dann „Zum Home-Bildschirm" wählen.
+        Browser-Adressleiste, und funktioniert auch offline. Auf dem iPhone/iPad geht das über das Teilen-Symbol
+        eures Browsers (Quadrat mit Pfeil nach oben), meist unten oder oben in der Leiste: antippen, dann „Zum
+        Home-Bildschirm" wählen.
       </p>
     );
   }
